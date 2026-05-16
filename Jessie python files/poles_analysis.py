@@ -1,11 +1,20 @@
+from pathlib import Path
+
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
-gdf_chargers = gpd.read_file("Data_Set\Dataset 3 – Existing EV Charging Points\oplaadpalen.geojson")
-gdf_buurten = gpd.read_file('other data/buurten.geojson')
-density_data = pd.read_csv('other data\lili_populationdesnity_districts.csv')[['buurtnaam', 'aantalHuishoudens']]
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def p(rel_windows_path: str) -> Path:
+    """This is to make sure the backlashes work on windows and linux OS as well."""
+    return ROOT.joinpath(*rel_windows_path.split("\\"))
+
+gdf_chargers = gpd.read_file(ROOT / "Data_Set" / "Dataset 3 – Existing EV Charging Points" / "oplaadpalen.geojson")
+gdf_buurten = gpd.read_file(ROOT / "other data" / "buurten.geojson")
+density_data = pd.read_csv(ROOT / "other data" / "lili_populationdesnity_districts.csv")[['buurtnaam', 'aantalHuishoudens']]
 density_data.columns = ['buurtnaam','density']
 # spatial join
 joined = gpd.sjoin(
@@ -49,17 +58,17 @@ strijp_x = chargers_density_no_neg[chargers_density_no_neg['buurtnaam'] == 'Stri
 strijp_y = chargers_density_no_neg[chargers_density_no_neg['buurtnaam'] == 'Strijp S']['aantal_laadpalen']
 # print(max(chargers_density_no_neg['density']))
 
-# fig, ax = plt.subplots()
-# data_plot = ax.scatter(x=x, y=y, alpha=0.5)
-# strijp_plot = ax.scatter(strijp_x, strijp_y, color='red')
-# ax.set_xlabel('Nr. of households')
-# ax.set_ylabel('Nr. of chargers')
-# ax.set_title('Neighborhood nr of households against nr of EV chargers')
+#fig, ax = plt.subplots()
+#data_plot = ax.scatter(x=x, y=y, alpha=0.5)
+#strijp_plot = ax.scatter(strijp_x, strijp_y, color='red')
+#ax.set_xlabel('Nr. of households')
+#ax.set_ylabel('Nr. of chargers')
+#ax.set_title('Neighborhood nr of households against nr of EV chargers')
 
-# lr = LinearRegression().fit(x,y)
-# x_train = [[0],[max(chargers_density_no_neg['density'])]]
-# y_test = lr.predict(x_train)
-# line_plot = ax.plot(x_train, y_test, color='black')
-# ax.legend([data_plot,strijp_plot,line_plot[0]],['Data','Strijp S','Linear regression'])
+#lr = LinearRegression().fit(x,y)
+#x_train = [[0],[max(chargers_density_no_neg['density'])]]
+#y_test = lr.predict(x_train)
+#line_plot = ax.plot(x_train, y_test, color='black')
+#ax.legend([data_plot,strijp_plot,line_plot[0]],['Data','Strijp S','Linear regression'])
 
-# plt.show()
+#plt.show()

@@ -3,14 +3,23 @@ import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
 import contextily as ctx
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def p(rel_windows_path: str) -> Path:
+    """This is to make sure the backlashes works on windows and linux OS as well"""
+    return ROOT.joinpath(*rel_windows_path.split("\\"))
 
 
 df = pd.read_csv(
-    'other data/enexis_elektra_csv/nbnl_e_ls_verbinding.csv',
+    ROOT / 'other data' / 'enexis_elektra_csv' / 'nbnl_e_ls_verbinding.csv',
     sep=';'
 )
 
-gdf_buurten = gpd.read_file('other data/buurten.geojson')
+gdf_buurten = gpd.read_file(ROOT / 'other data' / 'buurten.geojson')
 
 # Convert WKB hex to geometry
 df['geometry'] = df['geografischeligging'].apply(

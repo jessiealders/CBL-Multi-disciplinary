@@ -1,15 +1,27 @@
+from pathlib import Path
+
 import pandas as pd
 from poles_analysis import chargers_per_nbh
 import matplotlib.pyplot as plt
 
 # Found column aantalPersonenautosMetOverigeBrandstof -> num of cars with other fuel (probably electric)
 
-population_data = pd.read_csv('other data\lili_populationdesnity_districts.csv')[
-    ['buurtnaam','gemeentenaam','omgevingsadressendichtheid']]
-ehv_population_data = population_data[population_data['gemeentenaam'] == 'Eindhoven']
-od_matrix = pd.read_csv('Data_Set\Dataset 1 – Mobility Demand (Origin–Destination)\eindhoven_od_matrix.csv')
+ROOT = Path(__file__).resolve().parents[1]
 
-# population_data.columns = 
+
+def p(rel_windows_path: str) -> Path:
+    """This is to make sure the backlashes works on windows and linux OS as well"""
+    return ROOT.joinpath(*rel_windows_path.split("\\"))
+
+population_data = pd.read_csv(
+    ROOT / "other data" / "lili_populationdesnity_districts.csv"
+)[['buurtnaam', 'gemeentenaam', 'omgevingsadressendichtheid']]
+ehv_population_data = population_data[population_data['gemeentenaam'] == 'Eindhoven']
+od_matrix = pd.read_csv(
+    ROOT / "Data_Set" / "Dataset 1 – Mobility Demand (Origin–Destination)" / "eindhoven_od_matrix.csv"
+)
+
+# population_data.columns =
 
 most_address_dense = ehv_population_data.sort_values(
     'omgevingsadressendichtheid',ascending=False).reset_index()[0:30][
