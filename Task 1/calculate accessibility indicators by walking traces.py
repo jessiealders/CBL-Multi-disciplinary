@@ -11,7 +11,7 @@ DATA_DIR = ROOT / "other data"
 WALKING_TRACES_FILE = DATA_DIR / "walking_traces.geojson"
 CHARGING_POINTS_FILE = DATA_DIR / "charging_points_strijp_s.csv"
 
-
+#These just demand ponints that I choose, the location from google maps
 DEMAND_POINTS = [
     {
         "name": "Klokgebouw",
@@ -45,7 +45,7 @@ DEMAND_POINTS = [
     },
 ]
 
-
+#calculates the straight line distance from A to B
 def haversine_m(lat1, lon1, lat2, lon2):
     radius_m = 6_371_000
     phi1 = math.radians(lat1)
@@ -67,7 +67,7 @@ def accessibility_category(distance_m):
         return "acceptable"
     return "poor / possible gap"
 
-
+#Converts to string
 def coord_key(lon, lat):
     return f"{lon:.7f},{lat:.7f}"
 
@@ -91,7 +91,7 @@ def load_charging_points(path):
 
     return chargers
 
-
+#constructs the wakable street network as graph
 def build_walking_graph(path):
     geojson = json.loads(path.read_text(encoding="utf-8"))
     nodes = {}
@@ -113,7 +113,7 @@ def build_walking_graph(path):
 
     return nodes, graph, len(geojson["features"])
 
-
+#Ensures routing only happens on one continuous walkable network
 def largest_connected_component(nodes, graph):
     seen = set()
     components = []
@@ -139,7 +139,7 @@ def largest_connected_component(nodes, graph):
     components.sort(key=len, reverse=True)
     return components[0]
 
-
+#finds closest node on walking network
 def nearest_network_node(lat, lon, nodes, network_nodes):
     nearest_node = None
     nearest_distance = float("inf")
@@ -176,7 +176,7 @@ def shortest_path_distances(start_node, graph, allowed_nodes):
 
     return distances
 
-
+#snapping every charger to its closest network node
 def attach_chargers_to_network(chargers, nodes, network_nodes):
     attached_chargers = []
 
@@ -199,79 +199,143 @@ def attach_chargers_to_network(chargers, nodes, network_nodes):
     return attached_chargers
 
 
-def calculate_walking_kpi():
+def prepare_network():
     nodes, graph, trace_count = build_walking_graph(WALKING_TRACES_FILE)
     allowed_nodes = largest_connected_component(nodes, graph)
     network_nodes = list(allowed_nodes)
 
+    return nodes, graph, trace_count, allowed_nodes, network_nodes
+
+
+def prepare_chargers(nodes, network_nodes):
     chargers = load_charging_points(CHARGING_POINTS_FILE)
     chargers = attach_chargers_to_network(chargers, nodes, network_nodes)
 
-    results = []
+    return chargers
 
-    for demand in DEMAND_POINTS:
-        demand_node, demand_snap = nearest_network_node(
-            demand["lat"],
-            demand["lon"],
-            nodes,
-            network_nodes,
+
+def calculate_nearest_charger_for_demand_point(
+    demand,
+    chargers,
+    nodes,
+    graph,
+    allowed_nodes,
+    network_nodes,
+):
+    demand_node, demand_snap = nearest_network_node(
+        demand["lat"],
+        demand["lon"],
+        nodes,
+        network_nodes,
+    )
+
+    distances = shortest_path_distances(demand_node, graph, allowed_nodes)
+    nearest_result = None
+
+    for charger in chargers:
+        charger_node = charger["network_node"]
+        if charger_node not in distances:
+            continue
+
+        walking_distance_m = (
+            demand_snap
+            + distances[charger_node]
+            + charger["snap_to_network_m"]
         )
 
-        distances = shortest_path_distances(demand_node, graph, allowed_nodes)
-        nearest_result = None
+        if nearest_result is None or walking_distance_m < nearest_result["distance_m"]:
+            nearest_result = {
+                "demand_point": demand["name"],
+                "demand_type": demand["type"],
+                "demand_lat": demand["lat"],
+                "demand_lon": demand["lon"],
+                "nearest_charger": charger["address"],
+                "charger_id": charger["id"],
+                "provider": charger["provider"],
+                "charger_lat": charger["lat"],
+                "charger_lon": charger["lon"],
+                "distance_m": round(walking_distance_m, 1),
+                "accessibility_category": accessibility_category(walking_distance_m),
+            }
 
-        for charger in chargers:
-            charger_node = charger["network_node"]
-            if charger_node not in distances:
-                continue
+    if nearest_result is None:
+        raise RuntimeError(f"No reachable charger found for {demand['name']}")
 
-            walking_distance_m = (
-                demand_snap
-                + distances[charger_node]
-                + charger["snap_to_network_m"]
-            )
+    return nearest_result
 
-            if nearest_result is None or walking_distance_m < nearest_result["distance_m"]:
-                nearest_result = {
-                    "demand_point": demand["name"],
-                    "demand_type": demand["type"],
-                    "demand_lat": demand["lat"],
-                    "demand_lon": demand["lon"],
-                    "nearest_charger": charger["address"],
-                    "charger_id": charger["id"],
-                    "provider": charger["provider"],
-                    "charger_lat": charger["lat"],
-                    "charger_lon": charger["lon"],
-                    "distance_m": round(walking_distance_m, 1),
-                    "accessibility_category": accessibility_category(walking_distance_m),
-                }
 
-        if nearest_result is None:
-            raise RuntimeError(f"No reachable charger found for {demand['name']}")
+def calculate_all_walking_distances(
+    demand_points,
+    chargers,
+    nodes,
+    graph,
+    allowed_nodes,
+    network_nodes,
+):
+    results = []
 
+    for demand in demand_points:
+        nearest_result = calculate_nearest_charger_for_demand_point(
+            demand,
+            chargers,
+            nodes,
+            graph,
+            allowed_nodes,
+            network_nodes,
+        )
         results.append(nearest_result)
 
+    return results
+
+
+def calculate_average_walking_distance(results):
+    total_distance = sum(row["distance_m"] for row in results)
+    average_distance = total_distance / len(results)
+
+    return round(average_distance, 1)
+
+
+def calculate_coverage(results, threshold_m):
+    covered_points = sum(row["distance_m"] <= threshold_m for row in results)
+    coverage_percent = covered_points / len(results) * 100
+
+    return round(coverage_percent, 1)
+
+
+def create_kpi_summary(results, trace_count, network_nodes, chargers):
     summary = {
         "cleaned_walking_traces_used": trace_count,
         "network_nodes_used": len(network_nodes),
         "chargers_inside_strijp_s": len(chargers),
-        "average_walking_distance_m": average_walking_distance(results),
-        "coverage_within_300m_percent": coverage_within_threshold(results, 300),
-        "coverage_within_500m_percent": coverage_within_threshold(results, 500),
+        "average_walking_distance_m": calculate_average_walking_distance(results),
+        "coverage_within_300m_percent": calculate_coverage(results, 300),
+        "coverage_within_500m_percent": calculate_coverage(results, 500),
     }
 
+    return summary
+
+
+def calculate_walking_kpi():
+    nodes, graph, trace_count, allowed_nodes, network_nodes = prepare_network()
+    chargers = prepare_chargers(nodes, network_nodes)
+
+    results = calculate_all_walking_distances(
+        DEMAND_POINTS,
+        chargers,
+        nodes,
+        graph,
+        allowed_nodes,
+        network_nodes,
+    )
+
+    summary = create_kpi_summary(
+        results,
+        trace_count,
+        network_nodes,
+        chargers,
+    )
+
     return results, summary
-
-
-def average_walking_distance(results):
-    total_distance = sum(row["distance_m"] for row in results)
-    return round(total_distance / len(results), 1)
-
-
-def coverage_within_threshold(results, threshold_m):
-    covered_points = sum(row["distance_m"] <= threshold_m for row in results)
-    coverage_percent = covered_points / len(results) * 100
-    return round(coverage_percent, 1)
 
 
 def print_results(results, summary):
