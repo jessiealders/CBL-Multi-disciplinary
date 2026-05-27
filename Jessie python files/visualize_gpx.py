@@ -73,8 +73,8 @@ def plot_heatmap(gdf, ax) -> None:
 
 
 density_overlay = True
-save_to = None
-# save_to = ROOT / "gpx_density.png"
+save_to = ROOT / "other data" / "gpx_density.png"
+density_save_to = ROOT / "other data" / "gpx_heatmap_density.npz"
 
 gdf = load_data()
 xmin, ymin, xmax, ymax = gdf.total_bounds
@@ -91,6 +91,16 @@ if density_overlay:
 
     counts, _, _ = np.histogram2d(xs, ys, bins=512, range=[[xmin, xmax], [ymin, ymax]])
     counts = gaussian_filter(counts.T.astype(float), sigma=3)
+
+    np.savez(
+        density_save_to,
+        counts=counts,
+        xmin=np.float64(xmin),
+        xmax=np.float64(xmax),
+        ymin=np.float64(ymin),
+        ymax=np.float64(ymax),
+    )
+    print(f"Saved density grid: {density_save_to}")
 
     masked = np.ma.masked_where(counts == 0, counts)
     norm = mcolors.LogNorm(vmin=max(counts[counts > 0].min(), 1), vmax=counts.max())
@@ -125,8 +135,6 @@ fig.text(0.01, 0.01, label, fontsize=8, color="gray")
 
 plt.tight_layout()
 
-if save_to is not None:
-    fig.savefig(save_to, dpi=200, bbox_inches="tight")
-    print(f"Saved to {save_to}")
-else:
-    plt.show()
+fig.savefig(save_to, dpi=200, bbox_inches="tight")
+print(f"Saved heatmap: {save_to}")
+plt.close(fig)
