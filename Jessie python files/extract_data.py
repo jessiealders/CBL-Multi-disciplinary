@@ -14,7 +14,7 @@ def p(rel_windows_path: str) -> Path:
 # Reading the data from the csv file and converting to a Pandas dataframe
 # There were some errors after row 347174, but none of these rows contained data about
 # Eindhoven, so these 'bad lines' are skipped
-congestion_data = pd.read_csv(p(r"other data\congestie_pc6.csv"), on_bad_lines='skip', sep=';')
+congestion_data = pd.read_csv(p(r"other data\grid\congestie_pc6.csv"), on_bad_lines='skip', sep=';')
 # Using a regular expression (regex) to find all Eindhoven postcodes and save them in a list
 # (used https://postcodebijadres.nl/eindhoven to find the postcodes)
 ehv_postcodes_list = re.findall(r'56(?:0[0-6]|1[1-7]|2[1-9]|3[1-3]|4[1-7]|5[1-8])[A-Z]{2}',
@@ -34,4 +34,4 @@ ehv_congested_rows = ehv_congested_rows.reset_index()
 ehv_congested_rows.columns = ['old_index','postcode','consumption','generation',
                               'supply_area_id','supply_area_name','tennet_id','RNB_postcode']
 # Exporting the filtered dataset to a csv file
-ehv_congested_rows.to_csv('ehv_congestion.csv')
+ehv_congested_rows.to_csv(p(r"other data\grid\ehv_congestion.csv"))

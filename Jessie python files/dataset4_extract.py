@@ -19,7 +19,10 @@ df = pd.read_csv(
     sep=';'
 )
 
-gdf_buurten = gpd.read_file(ROOT / 'other data' / 'buurten.geojson')
+gdf_buurten_path = ROOT / 'other data' / 'spatial' / 'buurten.geojson'
+if not gdf_buurten_path.exists():
+    gdf_buurten_path = ROOT / 'other data' / 'buurten.geojson'
+gdf_buurten = gpd.read_file(gdf_buurten_path)
 
 # Convert WKB hex to geometry
 df['geometry'] = df['geografischeligging'].apply(
