@@ -4,13 +4,10 @@ import csv
 from pathlib import Path
 from dataclasses import dataclass
 
+import numpy as np
+from pyproj import Transformer
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def p(rel_windows_path: str) -> Path:
-    """Windows to POSIX path conversion."""
-    return ROOT.joinpath(*rel_windows_path.split("\\"))
 
 
 @dataclass(frozen=True)
@@ -21,6 +18,7 @@ class CandidateLocation:
     y: float
     max_area: float
     postcode: str | None = None
+
 
 # Load the candidate locations from a CSV file.
 def load_candidate_locations(path: Path) -> list[CandidateLocation]:
@@ -49,15 +47,51 @@ def load_candidate_locations(path: Path) -> list[CandidateLocation]:
     return locations
 
 
+def load_heatmap_weights(
+    locations: list["CandidateLocation"], density_path: Path
+) -> list[float] | None:
+    if not density_path.exists():
+        print(
+            f"Heatmap density file not found: {density_path}. Using uniform destination weights."
+        )
+        return None
+    data = np.load(density_path)
+    counts = data["counts"]  # shape (bins_y, bins_x), EPSG:3857
+    xmin, xmax = float(data["xmin"]), float(data["xmax"])
+    ymin, ymax = float(data["ymin"]), float(data["ymax"])
+    bins_y, bins_x = counts.shape
+
+    to_3857 = Transformer.from_crs("EPSG:28992", "EPSG:3857", always_xy=True)
+
+    weights: list[float] = []
+    for loc in locations:
+        x3857, y3857 = to_3857.transform(loc.x, loc.y)
+        ix = int((x3857 - xmin) / (xmax - xmin) * bins_x)
+        iy = int((y3857 - ymin) / (ymax - ymin) * bins_y)
+        ix = max(0, min(ix, bins_x - 1))
+        iy = max(0, min(iy, bins_y - 1))
+        # +1 so every location retains at least a baseline probability
+        weights.append(float(counts[iy, ix]) + 1.0)
+    return weights
+
+
 class Source:
-    '''
+    """
     Source: works as simulation generator.
     Generates a given number of cars and chargers.
     Stores cars and chargers in list so we can easily access them throughout the simulation.
     Parameters: environment, number of cars, number of chargers to generate
-    '''
+    """
 
-    def __init__(self, env, number_cars, number_chargers, candidate_locations=None, verbose=False):
+    def __init__(
+        self,
+        env,
+        number_cars,
+        number_chargers,
+        candidate_locations=None,
+        destination_weights=None,
+        verbose=False,
+    ):
         self.env = env
         self.number_cars = number_cars
         self.number_chargers = number_chargers
@@ -66,22 +100,29 @@ class Source:
         self.verbose = verbose
         self.events: list[dict] = []
         self.candidate_locations = candidate_locations or []
+        self.destination_weights = destination_weights
         self.chosen_charger_locations: list[CandidateLocation] = []
         self.action = env.process(self.generate())
 
     def log(self, kind: str, car_name: str, msg: str, **payload):
         """Store a structured event; optionally print it."""
-        row = {"t": float(self.env.now), "kind": kind, "car": car_name, "msg": msg, **payload}
+        row = {
+            "t": float(self.env.now),
+            "kind": kind,
+            "car": car_name,
+            "msg": msg,
+            **payload,
+        }
         self.events.append(row)
         if self.verbose:
             print(f"{self.env.now:.2f} {car_name} {kind}: {msg}")
 
     def generate(self):
-        '''
+        """
         Generates number of chargers and cars based on the given numbers,
         And stores these in lists self.chargers and self.cars so we can access them.
         Returns: None
-        '''
+        """
         # Generate chargers and add them to the list of chargers.
         # If we have candidate locations, pick unique locations at random (no repeats).
         if self.candidate_locations:
@@ -89,7 +130,9 @@ class Source:
                 raise ValueError(
                     f"Requested {self.number_chargers} chargers but only {len(self.candidate_locations)} candidate locations exist."
                 )
-            self.chosen_charger_locations = random.sample(self.candidate_locations, k=self.number_chargers)
+            self.chosen_charger_locations = random.sample(
+                self.candidate_locations, k=self.number_chargers
+            )
         else:
             self.chosen_charger_locations = []
 
@@ -102,21 +145,24 @@ class Source:
         # Generate cars, start the charging process and add them to the list of cars
         for car_id in range(self.number_cars):
             car = Car(self)
-            env.process(car.charge(self.env, f'Car {car_id}'))
+            env.process(car.charge(self.env, f"Car {car_id}"))
             self.cars.append(car)
 
         # The generate function needs to yield a timeout, otherwise it's not valid
         # This line basically does nothing
         yield self.env.timeout(0)
 
+
 class Charger(simpy.Resource):
-    '''
+    """
     Charger: Simpy Resource: provides a service (charging), can be occupied by cars
     Parameters: environment, charger id, capacity (= 1 because only 1 car can charge at each charger)
-    '''
+    """
 
     # Initialize the charger
-    def __init__(self, env, charger_id, capacity=1, location: CandidateLocation | None = None):
+    def __init__(
+        self, env, charger_id, capacity=1, location: CandidateLocation | None = None
+    ):
         super().__init__(env, capacity)
         self.charger_id = charger_id
         self.location = location
@@ -124,33 +170,40 @@ class Charger(simpy.Resource):
         self.chargingTime = 0
 
     def __str__(self):
-        '''
+        """
         Change the string represenation of charger so we can easily print chargers.
-        '''
+        """
         if self.location:
             return f"Charger {self.charger_id} (fid={self.location.fid})"
         return f"Charger {self.charger_id}"
 
 
 class Car:
-    '''
+    """
     Car: object that arrives, looks for the best available charger, charges, and then leaves.
     Uses external variables: minimal charging time, maximal charging time, simulation time, number of chargers
     Parameters: source object (for accessing the list of chargers)
-    '''
+    """
 
-    def __init__(self,src):
+    def __init__(self, src):
         # Change the generation of arrival times and destinations to distributions based on real data
         self.src = src
         # Randomly generate how long it takes to charge
-        self.chargeTime = random.randint(min_charge_time,max_charge_time)
+        self.chargeTime = random.randint(min_charge_time, max_charge_time)
         # Randomly choose an arrival time
-        self.arrivalTime = random.randint(0,simulation_time)
+        self.arrivalTime = random.randint(0, simulation_time)
         # Destination is now a real centroid point (x,y). We sample it from the candidate locations.
         # (Assumption for now: trips start/end within the same candidate set.)
         if not src.candidate_locations:
-            raise ValueError("No candidate locations loaded. Cannot pick a geographic destination.")
-        self.destination = random.choice(src.candidate_locations)
+            raise ValueError(
+                "No candidate locations loaded. Cannot pick a geographic destination."
+            )
+        if src.destination_weights:
+            self.destination = random.choices(
+                src.candidate_locations, weights=src.destination_weights, k=1
+            )[0]
+        else:
+            self.destination = random.choice(src.candidate_locations)
         self.waitingTime = None
         self.walkingDist = None
         # Create a dictionary of the closest chargers, charger as keys and walking distance as values
@@ -160,26 +213,28 @@ class Car:
         self.chosenCharger = list(self.closestChargers.keys())[0]
 
     def find_closest_chargers(self, src):
-        '''
+        """
         Creates a dictionary of the closest chargers to the chosen destination.
         Keys are chargers, values are walking distances from destination to charger
         Parameters: source object to access the list of chargers
         Returns: dictionary of sorted closest chargers with walking distances
-        '''
+        """
         charger_dict = {}
         # Save walking distances for each charger in dictionary
         for charger in src.chargers:
             charger_dict[charger] = self.calculate_walk_dist(charger)
         # Sort the dictionary by walking distances
-        sorted_charger_dict = {k: v for k, v in sorted(charger_dict.items(), key=lambda item: item[1])}
+        sorted_charger_dict = {
+            k: v for k, v in sorted(charger_dict.items(), key=lambda item: item[1])
+        }
         return sorted_charger_dict
 
     def charge(self, env, name):
-        '''
+        """
         Arrive, then check if best charger is available. If not, loop to find next best charger and try that one.
         Parameters: environment, source object and name of the car (for printing)
         Returns: None
-        '''
+        """
         # Arrive at self.arrivaltime
         yield env.timeout(self.arrivalTime)
         self.src.log("arrived", name, "arrived", destination_fid=self.destination.fid)
@@ -244,7 +299,9 @@ class Car:
                         to_charger_id=self.chosenCharger.charger_id,
                     )
                     # Travel to next charger using calculated travel time
-                    yield env.timeout(self.charger_travel_time(lastCharger, self.chosenCharger))
+                    yield env.timeout(
+                        self.charger_travel_time(lastCharger, self.chosenCharger)
+                    )
                 else:
                     self.status = "gave_up"
                     self.src.log(
@@ -257,13 +314,12 @@ class Car:
                     )
                     return
 
-
     def find_next_best_charger(self, last_charger):
-        '''
+        """
         Finds the next closest charger based on the list of closest chargers (sorted by distance from destination)
         Parameters: source object, last chosen charger
         (temporary) returns: index of the next charger in the list
-        '''
+        """
         # Create a list of the closest chargers sorted by distance
         chargers_list = list(self.closestChargers.keys())
         # Find and return the next charger in the list
@@ -272,11 +328,11 @@ class Car:
         return next_charger
 
     def calculate_walk_dist(self, charger):
-        '''
+        """
         Calculates the walking distance from the destination to the charger.
         Parameters: charger to calculate distance to
         (temporary) returns: absolute difference between charger's index and destination
-        '''
+        """
         # Walking distance in meters
         if charger.location is None:
             # Fallback to old behavior if no locations
@@ -287,11 +343,11 @@ class Car:
         return (dx * dx + dy * dy) ** 0.5
 
     def charger_travel_time(self, charger1, charger2):
-        '''
+        """
         Calculates travel time from one charger to another
         Parameters: charger1's index, charger2's index
         (temporary) returns: difference between charger indexes
-        '''
+        """
         # Travel time between chargers is approximated from euclidean distance.
         # Units: 1 time unit == 1 minute, walking_speed_m_per_min controls conversion.
         if charger1.location is None or charger2.location is None:
@@ -302,6 +358,7 @@ class Car:
         dy = charger2.location.y - charger1.location.y
         dist_m = (dx * dx + dy * dy) ** 0.5
         return dist_m / walking_speed_m_per_min
+
 
 # Initialize the constants of the simulation
 simulation_time = 200
@@ -316,16 +373,28 @@ verbose = False  # set True for per-car event logs
 env = simpy.Environment()
 # Load candidate locations (centroids) for Strijp-S free placement
 candidate_locations = load_candidate_locations(
-    p(r"other data\freepacement_lessdata_strijp_lili.csv")
+    ROOT / "other data" / "reepacement_lessdata_strijp_lili.csv"
+)
+# Weight destinations by GPX movement density.
+destination_weights = load_heatmap_weights(
+    candidate_locations, ROOT / "other data" / "gpx_heatmap_density.npz"
 )
 # Create the source object to generate the cars and chargers
-src = Source(env, num_cars, num_chargers, candidate_locations=candidate_locations, verbose=verbose)
+src = Source(
+    env,
+    num_cars,
+    num_chargers,
+    candidate_locations=candidate_locations,
+    destination_weights=destination_weights,
+    verbose=verbose,
+)
 
 # Choosing random charging ports
 if src.chosen_charger_locations:
     chosen = src.chosen_charger_locations
     chosen_str = ", ".join(
-        f"fid={c.fid} ({c.identificatie or 'n/a'}{', ' + c.postcode if c.postcode else ''})" for c in chosen
+        f"fid={c.fid} ({c.identificatie or 'n/a'}{', ' + c.postcode if c.postcode else ''})"
+        for c in chosen
     )
     print(f"Chosen charger candidate locations (n={len(chosen)}): {chosen_str}")
 # Run the simulation until the given time
@@ -344,23 +413,25 @@ for car in src.cars:
         total_walkdist += car.walkingDist
 
 cars_charged = num_cars - didnt_charge
-avg_waiting = total_waiting/(cars_charged)
+avg_waiting = total_waiting / (cars_charged)
 avg_walkdist = total_walkdist / (cars_charged)
 perc_didnt_charge = didnt_charge / num_cars * 100
 perc_charged = cars_charged / num_cars * 100
 
 
 # Print car metrics
-print(f'''Metrics:
+print(f"""Metrics:
 % of cars that didnt charge: {perc_didnt_charge}%,
 % of cars that charged: {perc_charged}%,
 Average waiting time of cars that charged: {avg_waiting},
-Average walking dist of cars that charged: {avg_walkdist}''')
+Average walking dist of cars that charged: {avg_walkdist}""")
 
 # Write structured event log to csv
 events_path = ROOT / "other data" / "simulation_events.csv"
 with events_path.open("w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(f, fieldnames=sorted({k for e in src.events for k in e.keys()}))
+    writer = csv.DictWriter(
+        f, fieldnames=sorted({k for e in src.events for k in e.keys()})
+    )
     writer.writeheader()
     writer.writerows(src.events)
 print(f"Wrote events log: {events_path}")
@@ -368,4 +439,4 @@ print(f"Wrote events log: {events_path}")
 # Calculate and print charger utilizations
 for charger in src.chargers:
     utilization = charger.chargingTime / (simulation_time * charger.capacity)
-    print(f'{charger} utilization: {utilization}')
+    print(f"{charger} utilization: {utilization}")
