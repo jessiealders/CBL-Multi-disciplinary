@@ -13,7 +13,10 @@ def p(rel_windows_path: str) -> Path:
     return ROOT.joinpath(*rel_windows_path.split("\\"))
 
 gdf_chargers = gpd.read_file(ROOT / "Data_Set" / "Dataset 3 – Existing EV Charging Points" / "oplaadpalen.geojson")
-gdf_buurten = gpd.read_file(ROOT / "other data" / "buurten.geojson")
+gdf_buurten_path = ROOT / "other data" / "spatial" / "buurten.geojson"
+if not gdf_buurten_path.exists():
+    gdf_buurten_path = ROOT / "other data" / "buurten.geojson"
+gdf_buurten = gpd.read_file(gdf_buurten_path)
 density_data = pd.read_csv(ROOT / "other data" / "lili_populationdesnity_districts.csv")[['buurtnaam', 'aantalHuishoudens']]
 density_data.columns = ['buurtnaam','density']
 # spatial join

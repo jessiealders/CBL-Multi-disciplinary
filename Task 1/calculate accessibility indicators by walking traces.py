@@ -8,7 +8,10 @@ from collections import defaultdict, deque
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "other data"
-WALKING_TRACES_FILE = DATA_DIR / "walking_traces.geojson"
+SPATIAL_DATA_DIR = DATA_DIR / "spatial"
+WALKING_TRACES_FILE = SPATIAL_DATA_DIR / "walking_traces.geojson"
+if not WALKING_TRACES_FILE.exists():
+    WALKING_TRACES_FILE = DATA_DIR / "walking_traces.geojson"
 CHARGING_POINTS_FILE = DATA_DIR / "charging_points_strijp_s.csv"
 
 #These just demand ponints that I choose, the location from google maps

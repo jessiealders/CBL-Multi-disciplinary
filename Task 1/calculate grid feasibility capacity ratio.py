@@ -5,11 +5,24 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GRID_DATA_DIR = ROOT / "Data_Set" / "Dataset 5 – Grid Congestion & Constraints"
 OTHER_DATA_DIR = ROOT / "other data"
+DATASET_DIR = ROOT / "Data_Set"
+
+
+def find_dataset_5_dir():
+    for path in DATASET_DIR.iterdir():
+        if path.is_dir() and path.name.startswith("Dataset 5"):
+            return path
+    raise FileNotFoundError("Could not find Dataset 5 folder.")
+
+
+GRID_DATA_DIR = find_dataset_5_dir()
 
 CONGESTION_PC6_FILE = GRID_DATA_DIR / "congestie_pc6.csv"
 FEEDING_AREAS_FILE = GRID_DATA_DIR / "voedingsgebieden.csv"
 PROJECTS_FILE = GRID_DATA_DIR / "projecten.csv"
-CHARGING_POINTS_FILE = OTHER_DATA_DIR / "charging_points_strijp_s.csv"
+CHARGING_POINTS_FILE = OTHER_DATA_DIR / "charging points" / "existing_charging_points_strijp_s.csv"
+if not CHARGING_POINTS_FILE.exists():
+    CHARGING_POINTS_FILE = OTHER_DATA_DIR / "charging_points_strijp_s.csv"
 
 POSTCODE_PREFIX = "5617"
 POWER_PER_CONNECTOR_KW = 22

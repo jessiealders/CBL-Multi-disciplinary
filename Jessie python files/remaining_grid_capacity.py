@@ -261,7 +261,7 @@ def run_mode_assume_all_zones_class0(demand_path: Path) -> None:
         ].to_string(index=False)
     )
 
-    output_csv = p(r"other data\zone_remaining_capacity_estimates_assume_class0.csv")
+    output_csv = p(r"other data\grid\zone_remaining_capacity_estimates_assume_class0.csv")
     out.to_csv(output_csv, index=False)
     print(f"\nWrote: {output_csv}")
 
