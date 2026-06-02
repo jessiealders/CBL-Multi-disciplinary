@@ -238,7 +238,6 @@ class Source:
         # Generate cars, start the charging process and add them to the list of cars
         for car_id in range(self.number_cars):
             car = Car(self)
-            env.process(car.charge(self.env, f"Car {car_id}"))
             self.env.process(car.charge(self.env, f'Car {car_id}'))
             self.cars.append(car)
 
