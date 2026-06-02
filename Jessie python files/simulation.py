@@ -238,13 +238,13 @@ class Source:
         # Generate cars, start the charging process and add them to the list of cars
         for car_id in range(self.number_cars):
             car = Car(self)
-            env.process(car.charge(self.env, f"Car {car_id}"))
-            self.env.process(car.charge(self.env, f'Car {car_id}'))
+            self.env.process(car.charge(self.env, f"Car {car_id}"))
             self.cars.append(car)
 
         # The generate function needs to yield a timeout, otherwise it's not valid
         # This line basically does nothing
         yield self.env.timeout(0)
+
 
 class Charger(simpy.Resource):
     """
@@ -679,6 +679,6 @@ def main() -> None:
     print_summary(results)
     print(f"\nWrote scenario summary: {summary_path}")
 
-#don’t put the simulation run directly in the middle of the file use def main() above
+
 if __name__ == "__main__":
     main()
