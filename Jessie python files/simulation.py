@@ -245,7 +245,6 @@ class Source:
         # This line basically does nothing
         yield self.env.timeout(0)
 
-
 class Charger(simpy.Resource):
     """
     Charger: Simpy Resource: provides a service (charging), can be occupied by cars
@@ -676,6 +675,6 @@ def main() -> None:
     print_summary(results)
     print(f"\nWrote scenario summary: {summary_path}")
 
-
+#don’t put the simulation run directly in the middle of the file use def main() above
 if __name__ == "__main__":
     main()
