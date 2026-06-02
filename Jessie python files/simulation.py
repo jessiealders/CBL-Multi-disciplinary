@@ -238,7 +238,8 @@ class Source:
         # Generate cars, start the charging process and add them to the list of cars
         for car_id in range(self.number_cars):
             car = Car(self)
-            self.env.process(car.charge(self.env, f"Car {car_id}"))
+            env.process(car.charge(self.env, f"Car {car_id}"))
+            self.env.process(car.charge(self.env, f'Car {car_id}'))
             self.cars.append(car)
 
         # The generate function needs to yield a timeout, otherwise it's not valid
@@ -300,6 +301,7 @@ class Car:
             self.destination = random.choice(src.candidate_locations)
         self.waitingTime = None
         self.walkingDist = None
+        self.status = "created"
         # Create a dictionary of the closest chargers, charger as keys and walking distance as values
         # Sorted, so the closest charger is the first item
         self.closestChargers = self.find_closest_chargers(src)
@@ -380,6 +382,8 @@ class Car:
                 nextCharger = self.find_next_best_charger(self.chosenCharger)
                 if nextCharger is None:
                     self.status = "gave_up"
+                    self.waitingTime = None
+                    self.walkingDist = None
                     self.src.log(
                         "gave_up",
                         name,
