@@ -1,13 +1,70 @@
 import simpy
 import random
 import csv
+import sys
 from pathlib import Path
 from dataclasses import dataclass
 
 import numpy as np
 from pyproj import Transformer
 
+
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.shared.walking_network import WalkingNetwork
+
+
+# -----------------------------
+# Paths and scenario settings
+# -----------------------------
+
+CANDIDATE_LOCATIONS_PATH = (
+    ROOT / "processed data" / "freepacement_lessdata_strijp_lili.csv"
+)
+EXISTING_CHARGERS_PATH = (
+    ROOT
+    / "processed data"
+    / "charging points"
+    / "existing_charging_points_strijp_s.csv"
+)
+HEATMAP_DENSITY_PATH = ROOT / "processed data" / "gpx_heatmap_density.npz"
+WALKING_NETWORK_PATH = ROOT / "processed data" / "spatial" / "walking_traces.geojson"
+OUTPUT_DIR = ROOT / "processed data" / "simulation"
+
+RD_TO_WGS84 = Transformer.from_crs("EPSG:28992", "EPSG:4326", always_xy=True)
+RD_TO_WEB_MERCATOR = Transformer.from_crs("EPSG:28992", "EPSG:3857", always_xy=True)
+
+SCENARIOS = {
+    "current_situation": {
+        "description": "Current charging points in Strijp-S.",
+        "charger_strategy": "existing",
+        "num_cars": 40,
+        "num_chargers": 5,
+        "simulation_time": 200,
+        "min_charge_time": 1,
+        "max_charge_time": 30,
+        "walking_threshold_m": 300,
+        "seed": 10,
+    },
+}
+
+
+# -----------------------------
+# Coordinate helpers
+# -----------------------------
+
+
+def rd_to_wgs84(x, y):
+    """Convert Dutch RD coordinates (EPSG:28992) to latitude/longitude."""
+    lon, lat = RD_TO_WGS84.transform(x, y)
+    return lat, lon
+
+
+# -----------------------------
+# Data models and loading
+# -----------------------------
 
 
 @dataclass(frozen=True)
@@ -19,8 +76,10 @@ class CandidateLocation:
     max_area: float
     postcode: str | None = None
 
+    def lat_lon(self):
+        return rd_to_wgs84(self.x, self.y)
 
-# Load the candidate locations from a CSV file.
+
 def load_candidate_locations(path: Path) -> list[CandidateLocation]:
     """Load candidate charger locations (centroids) from the CSV."""
     locations: list[CandidateLocation] = []
@@ -47,6 +106,28 @@ def load_candidate_locations(path: Path) -> list[CandidateLocation]:
     return locations
 
 
+def load_existing_charger_locations(path: Path) -> list[CandidateLocation]:
+    """Load existing Strijp-S charging points as charger locations."""
+    locations: list[CandidateLocation] = []
+    with path.open("r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for index, row in enumerate(reader, start=1):
+            x = float(row["X_coordinate"])
+            y = float(row["Y_coordinate"])
+            charger_id = row.get("charger_id") or index
+            locations.append(
+                CandidateLocation(
+                    fid=int(float(charger_id)),
+                    identificatie=(row.get("geovisia_id") or "").strip(),
+                    x=x,
+                    y=y,
+                    max_area=0.0,
+                    postcode=(row.get("most_common_postcode") or "").strip() or None,
+                )
+            )
+    return locations
+
+
 def load_heatmap_weights(
     locations: list["CandidateLocation"], density_path: Path
 ) -> list[float] | None:
@@ -61,11 +142,9 @@ def load_heatmap_weights(
     ymin, ymax = float(data["ymin"]), float(data["ymax"])
     bins_y, bins_x = counts.shape
 
-    to_3857 = Transformer.from_crs("EPSG:28992", "EPSG:3857", always_xy=True)
-
     weights: list[float] = []
     for loc in locations:
-        x3857, y3857 = to_3857.transform(loc.x, loc.y)
+        x3857, y3857 = RD_TO_WEB_MERCATOR.transform(loc.x, loc.y)
         ix = int((x3857 - xmin) / (xmax - xmin) * bins_x)
         iy = int((y3857 - ymin) / (ymax - ymin) * bins_y)
         ix = max(0, min(ix, bins_x - 1))
@@ -73,6 +152,11 @@ def load_heatmap_weights(
         # +1 so every location retains at least a baseline probability
         weights.append(float(counts[iy, ix]) + 1.0)
     return weights
+
+
+# -----------------------------
+# Simulation entities
+# -----------------------------
 
 
 class Source:
@@ -86,13 +170,17 @@ class Source:
     def __init__(
         self,
         env,
+        config,
         number_cars,
         number_chargers,
         candidate_locations=None,
+        charger_locations=None,
         destination_weights=None,
+        walking_network=None,
         verbose=False,
     ):
         self.env = env
+        self.config = config
         self.number_cars = number_cars
         self.number_chargers = number_chargers
         self.chargers = []
@@ -100,7 +188,9 @@ class Source:
         self.verbose = verbose
         self.events: list[dict] = []
         self.candidate_locations = candidate_locations or []
+        self.fixed_charger_locations = charger_locations
         self.destination_weights = destination_weights
+        self.walking_network = walking_network
         self.chosen_charger_locations: list[CandidateLocation] = []
         self.action = env.process(self.generate())
 
@@ -125,7 +215,10 @@ class Source:
         """
         # Generate chargers and add them to the list of chargers.
         # If we have candidate locations, pick unique locations at random (no repeats).
-        if self.candidate_locations:
+        if self.fixed_charger_locations is not None:
+            self.chosen_charger_locations = list(self.fixed_charger_locations)
+            self.number_chargers = len(self.chosen_charger_locations)
+        elif self.candidate_locations:
             if self.number_chargers > len(self.candidate_locations):
                 raise ValueError(
                     f"Requested {self.number_chargers} chargers but only {len(self.candidate_locations)} candidate locations exist."
@@ -152,7 +245,6 @@ class Source:
         # The generate function needs to yield a timeout, otherwise it's not valid
         # This line basically does nothing
         yield self.env.timeout(0)
-
 
 class Charger(simpy.Resource):
     """
@@ -190,9 +282,11 @@ class Car:
         # Change the generation of arrival times and destinations to distributions based on real data
         self.src = src
         # Randomly generate how long it takes to charge
-        self.chargeTime = random.randint(min_charge_time, max_charge_time)
+        self.chargeTime = random.randint(
+            src.config["min_charge_time"], src.config["max_charge_time"]
+        )
         # Randomly choose an arrival time
-        self.arrivalTime = random.randint(0, simulation_time)
+        self.arrivalTime = random.randint(0, src.config["simulation_time"])
         # Destination is now a real centroid point (x,y). We sample it from the candidate locations.
         # (Assumption for now: trips start/end within the same candidate set.)
         if not src.candidate_locations:
@@ -241,78 +335,90 @@ class Car:
         yield env.timeout(self.arrivalTime)
         self.src.log("arrived", name, "arrived", destination_fid=self.destination.fid)
 
-        # Perfect-information policy:
-        # - choose the closest currently-free charger within walking threshold
-        # - if none are free, wait and retry
-        # - give up after max_wait_min
-        retry_every_min = 1
-        max_wait_min = 5
-        deadline = self.arrivalTime + max_wait_min
-
+        # Loop: keep looking for an available charger.
         while True:
-            available = [
-                c
-                for c, dist in self.closestChargers.items()
-                if dist < walking_threshold_m and c.count < c.capacity
-            ]
+            # Make request for charger
+            charger = self.chosenCharger
+            req = charger.request()
+            # results = request if it went through, otherwise wait 1 [time unit]
+            results = yield req | env.timeout(1)
+            # Check if request went through
+            if req in results:
+                self.waitingTime = env.now - self.arrivalTime
+                self.finalCharger = charger
+                self.src.log(
+                    "start_charge",
+                    name,
+                    f"starting to charge at {charger}",
+                    charger_id=charger.charger_id,
+                    charger_fid=(charger.location.fid if charger.location else None),
+                )
+                # Find walkingDist to chosen charger
+                self.walkingDist = self.closestChargers[self.chosenCharger]
 
-            if not available:
-                if env.now >= deadline:
+                # Charge and add charging time to charger's total charging time
+                yield env.timeout(self.chargeTime)
+                charger.chargingTime += self.chargeTime
+                # Release the request because it is done, and end the charge function
+                charger.release(req)
+                self.status = "charged"
+                self.src.log(
+                    "done",
+                    name,
+                    "done charging",
+                    charger_id=charger.charger_id,
+                    charger_fid=(charger.location.fid if charger.location else None),
+                    charge_time=float(self.chargeTime),
+                    walking_dist_m=float(self.walkingDist),
+                )
+                return
+
+            else:
+                # Cancel the request for the current (unavailable) charger
+                req.cancel()
+                # Save the unavailable charger
+                lastCharger = self.chosenCharger
+                # Find the next best charger
+                nextCharger = self.find_next_best_charger(self.chosenCharger)
+                if nextCharger is None:
                     self.status = "gave_up"
                     self.waitingTime = None
                     self.walkingDist = None
                     self.src.log(
                         "gave_up",
                         name,
-                        f"gave up after waiting {max_wait_min} minutes for a free charger",
-                        max_wait_min=float(max_wait_min),
+                        "no alternate charger available, gave up",
+                        last_charger_id=lastCharger.charger_id,
                     )
                     return
+                # Save the next charger as chosen charger
+                self.chosenCharger = nextCharger
+                self.src.log(
+                    "switch",
+                    name,
+                    f"{lastCharger} not available, trying {self.chosenCharger}",
+                    from_charger_id=lastCharger.charger_id,
+                    to_charger_id=self.chosenCharger.charger_id,
+                )
+                # Travel to next charger using calculated travel time
+                yield env.timeout(
+                    self.charger_travel_time(lastCharger, self.chosenCharger)
+                )
 
-                if self.status != "waiting_for_free":
-                    self.status = "waiting_for_free"
-                    self.src.log(
-                        "wait_no_free",
-                        name,
-                        "no charger free within walking threshold; waiting",
-                    )
-                yield env.timeout(retry_every_min)
-                continue
-
-            chosen = min(available, key=lambda c: self.closestChargers[c])
-            self.chosenCharger = chosen
-
-            req = chosen.request()
-            yield req
-
-            self.waitingTime = env.now - self.arrivalTime
-            self.finalCharger = chosen
-            self.walkingDist = self.closestChargers[chosen]
-            self.status = "charging"
-            self.src.log(
-                "start_charge",
-                name,
-                f"starting to charge at {chosen}",
-                charger_id=chosen.charger_id,
-                charger_fid=(chosen.location.fid if chosen.location else None),
-                waited=float(self.waitingTime),
-                walking_dist_m=float(self.walkingDist),
-            )
-
-            yield env.timeout(self.chargeTime)
-            chosen.chargingTime += self.chargeTime
-            chosen.release(req)
-            self.status = "charged"
-            self.src.log(
-                "done",
-                name,
-                "done charging",
-                charger_id=chosen.charger_id,
-                charger_fid=(chosen.location.fid if chosen.location else None),
-                charge_time=float(self.chargeTime),
-                walking_dist_m=float(self.walkingDist),
-            )
-            return
+    def find_next_best_charger(self, last_charger):
+        """
+        Finds the next closest charger based on the list of closest chargers (sorted by distance from destination)
+        Parameters: source object, last chosen charger
+        (temporary) returns: index of the next charger in the list
+        """
+        # Create a list of the closest chargers sorted by distance
+        chargers_list = list(self.closestChargers.keys())
+        # Find and return the next charger in the list
+        last_idx = chargers_list.index(last_charger)
+        next_idx = last_idx + 1
+        if next_idx >= len(chargers_list):
+            return None
+        return chargers_list[next_idx]
 
     def calculate_walk_dist(self, charger):
         """
@@ -325,6 +431,15 @@ class Car:
             # Fallback to old behavior if no locations
             charger_idx = self.src.chargers.index(charger)
             return abs(charger_idx - 0)
+        if self.src.walking_network:
+            destination_lat, destination_lon = self.destination.lat_lon()
+            charger_lat, charger_lon = charger.location.lat_lon()
+            return self.src.walking_network.distance_m(
+                destination_lat,
+                destination_lon,
+                charger_lat,
+                charger_lon,
+            )
         dx = charger.location.x - self.destination.x
         dy = charger.location.y - self.destination.y
         return (dx * dx + dy * dy) ** 0.5
@@ -341,113 +456,229 @@ class Car:
             charger1_idx = self.src.chargers.index(charger1)
             charger2_idx = self.src.chargers.index(charger2)
             return abs(charger1_idx - charger2_idx)
+        if self.src.walking_network:
+            charger1_lat, charger1_lon = charger1.location.lat_lon()
+            charger2_lat, charger2_lon = charger2.location.lat_lon()
+            dist_m = self.src.walking_network.distance_m(
+                charger1_lat,
+                charger1_lon,
+                charger2_lat,
+                charger2_lon,
+            )
+            return dist_m / self.src.config.get("walking_speed_m_per_min", 83.3)
         dx = charger2.location.x - charger1.location.x
         dy = charger2.location.y - charger1.location.y
         dist_m = (dx * dx + dy * dy) ** 0.5
-        return dist_m / walking_speed_m_per_min
+        return dist_m / self.src.config.get("walking_speed_m_per_min", 83.3)
+
+
+# -----------------------------
+# Charger-location strategies
+# -----------------------------
+
+
+def select_spread_out_locations(
+    locations: list[CandidateLocation], number_chargers: int
+) -> list[CandidateLocation]:
+    """Greedy spread: start near the center, then repeatedly pick the farthest candidate."""
+    if number_chargers >= len(locations):
+        return list(locations)
+
+    center_x = sum(loc.x for loc in locations) / len(locations)
+    center_y = sum(loc.y for loc in locations) / len(locations)
+    chosen = [
+        min(
+            locations,
+            key=lambda loc: (loc.x - center_x) ** 2 + (loc.y - center_y) ** 2,
+        )
+    ]
+
+    while len(chosen) < number_chargers:
+        remaining = [loc for loc in locations if loc not in chosen]
+        next_location = max(
+            remaining,
+            key=lambda loc: min(
+                (loc.x - selected.x) ** 2 + (loc.y - selected.y) ** 2
+                for selected in chosen
+            ),
+        )
+        chosen.append(next_location)
+
+    return chosen
+
+
+def select_charger_locations(
+    strategy: str,
+    number_chargers: int,
+    candidate_locations: list[CandidateLocation],
+    destination_weights: list[float] | None,
+    existing_charger_locations: list[CandidateLocation],
+) -> list[CandidateLocation]:
+    if strategy == "existing":
+        return existing_charger_locations[:number_chargers]
+    if strategy == "demand_hotspots" and destination_weights:
+        weighted = sorted(
+            zip(candidate_locations, destination_weights),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+        return [location for location, _ in weighted[:number_chargers]]
+    if strategy == "spread_out":
+        return select_spread_out_locations(candidate_locations, number_chargers)
+
+    return random.sample(candidate_locations, k=number_chargers)
+
+
+# -----------------------------
+# Output helpers
+# -----------------------------
+
+
+def write_events(events_dir: Path, scenario_name: str, events: list[dict]) -> Path:
+    events_path = events_dir / f"simulation_events_{scenario_name}.csv"
+    if not events:
+        events_path.write_text("", encoding="utf-8")
+        return events_path
+
+    with events_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=sorted({k for event in events for k in event.keys()})
+        )
+        writer.writeheader()
+        writer.writerows(events)
+    return events_path
+
+
+# -----------------------------
+# Simulation runner
+# -----------------------------
 
 
 def run_simulation(
-    *,
+    scenario_name: str,
+    config: dict,
     candidate_locations: list[CandidateLocation],
-    num_chargers: int,
-    arrival_times: list[float],
-    simulation_time: int,
-    min_charge_time: int,
-    max_charge_time: int,
-    walking_threshold_m: float,
-    walking_speed_m_per_min: float,
-    seed: int | None = None,
-    verbose: bool = False,
-):
-    """Run one simulation with explicit arrival times.
+    destination_weights: list[float] | None,
+    existing_charger_locations: list[CandidateLocation],
+    walking_network: WalkingNetwork,
+    events_dir: Path,
+) -> dict:
+    simulation_time = config["simulation_time"]
+    num_cars = config["num_cars"]
+    num_chargers = config["num_chargers"]
+    random.seed(config["seed"])
 
-    Returns:
-      (src, chosen_locations)
-    where src is the Source instance (contains events/cars/chargers), and chosen_locations
-    is the list of CandidateLocation objects used for charger placement.
-    """
-    # Set globals expected by Car.__init__/Car.charger_travel_time.
-    globals()["simulation_time"] = simulation_time
-    globals()["min_charge_time"] = min_charge_time
-    globals()["max_charge_time"] = max_charge_time
-    globals()["walking_threshold_m"] = walking_threshold_m
-    globals()["walking_speed_m_per_min"] = walking_speed_m_per_min
-
-    if seed is not None:
-        random.seed(seed)
-
-    env = simpy.Environment()
-    src = Source(env, len(arrival_times), num_chargers, candidate_locations=candidate_locations, verbose=verbose)
-
-    # Override the randomly generated arrivalTime per Car with provided arrival_times.
-    for car, at in zip(src.cars, arrival_times):
-        car.arrivalTime = float(at)
-
-    env.run(until=simulation_time)
-    return src, src.chosen_charger_locations
-
-if __name__ == "__main__":
-    # Initialize the constants of the simulation
-    simulation_time = 200
-    min_charge_time = 1
-    max_charge_time = 30
-    num_cars = 40
-    num_chargers = 7
-    walking_threshold_m = 300  # max walking distance (meters) from destination
-    walking_speed_m_per_min = 83.3  # ~5 km/h
-    verbose = False  # set True for per-car event logs
-    # random.seed(0) # Leave it commented for randomness.
-
-    # Load candidate locations (centroids) for Strijp-S free placement
-    candidate_locations = load_candidate_locations(
-        p(r"other data\freepacement_lessdata_strijp_lili.csv")
+    charger_locations = select_charger_locations(
+        config["charger_strategy"],
+        num_chargers,
+        candidate_locations,
+        destination_weights,
+        existing_charger_locations,
     )
 
-    # Use the original behavior (random arrival times) for interactive single runs.
     env = simpy.Environment()
-    src = Source(env, num_cars, num_chargers, candidate_locations=candidate_locations, verbose=verbose)
-
-    if src.chosen_charger_locations:
-        chosen = src.chosen_charger_locations
-        chosen_str = ", ".join(
-            f"fid={c.fid} ({c.identificatie or 'n/a'}{', ' + c.postcode if c.postcode else ''})" for c in chosen
-        )
-        print(f"Chosen charger candidate locations (n={len(chosen)}): {chosen_str}")
-
+    src = Source(
+        env,
+        config,
+        num_cars,
+        len(charger_locations),
+        candidate_locations=candidate_locations,
+        charger_locations=charger_locations,
+        destination_weights=destination_weights,
+        walking_network=walking_network,
+        verbose=config.get("verbose", False),
+    )
     env.run(until=simulation_time)
 
-    total_waiting = 0
-    didnt_charge = 0
-    total_walkdist = 0
-    for car in src.cars:
-        if car.waitingTime == None:
-            didnt_charge += 1
-        else:
-            total_waiting += car.waitingTime
-            total_walkdist += car.walkingDist
-
-    cars_charged = num_cars - didnt_charge
-    avg_waiting = total_waiting / (cars_charged) if cars_charged else 0
-    avg_walkdist = total_walkdist / (cars_charged) if cars_charged else 0
-    perc_didnt_charge = didnt_charge / num_cars * 100 if num_cars else 0
-    perc_charged = cars_charged / num_cars * 100 if num_cars else 0
-
-    print(
-        f"""Metrics:
-% of cars that didnt charge: {perc_didnt_charge}%,
-% of cars that charged: {perc_charged}%,
-Average waiting time of cars that charged: {avg_waiting},
-Average walking dist of cars that charged: {avg_walkdist}"""
+    completed_cars = [car for car in src.cars if getattr(car, "status", None) == "charged"]
+    gave_up_cars = [car for car in src.cars if getattr(car, "status", None) == "gave_up"]
+    total_walkdist = sum(car.walkingDist for car in completed_cars)
+    total_utilization = sum(
+        charger.chargingTime / (simulation_time * charger.capacity)
+        for charger in src.chargers
     )
 
-    events_path = ROOT / "other data" / "simulation_events.csv"
-    with events_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=sorted({k for e in src.events for k in e.keys()}))
+    events_path = write_events(events_dir, scenario_name, src.events)
+    charger_fids = ";".join(str(location.fid) for location in charger_locations)
+
+    return {
+        "scenario": scenario_name,
+        "description": config["description"],
+        "charger_strategy": config["charger_strategy"],
+        "num_cars": num_cars,
+        "num_chargers": len(charger_locations),
+        "walking_threshold_m": config["walking_threshold_m"],
+        "completed_charging": len(completed_cars),
+        "gave_up": len(gave_up_cars),
+        "completed_pct": len(completed_cars) / num_cars * 100,
+        "gave_up_pct": len(gave_up_cars) / num_cars * 100,
+        "avg_walking_dist_m": total_walkdist / len(completed_cars)
+        if completed_cars
+        else 0,
+        "avg_charger_utilization": total_utilization / len(src.chargers)
+        if src.chargers
+        else 0,
+        "charger_fids": charger_fids,
+        "events_file": str(events_path),
+    }
+
+
+def write_summary(events_dir: Path, results: list[dict]) -> Path:
+    summary_path = events_dir / "simulation_scenario_summary.csv"
+    with summary_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
         writer.writeheader()
-        writer.writerows(src.events)
-    print(f"Wrote events log: {events_path}")
+        writer.writerows(results)
+    return summary_path
 
-    for charger in src.chargers:
-        utilization = charger.chargingTime / (simulation_time * charger.capacity)
-        print(f"{charger} utilization: {utilization}")
+
+def print_summary(results: list[dict]) -> None:
+    print("\nSimulation result")
+    print(
+        f"{'scenario':<24} {'completed %':>11} {'gave up %':>9} "
+        f"{'avg walk m':>11} {'utilization':>11}"
+    )
+    for result in results:
+        print(
+            f"{result['scenario']:<24} "
+            f"{result['completed_pct']:>11.1f} "
+            f"{result['gave_up_pct']:>9.1f} "
+            f"{result['avg_walking_dist_m']:>11.1f} "
+            f"{result['avg_charger_utilization']:>11.2f}"
+        )
+
+
+def main() -> None:
+    candidate_locations = load_candidate_locations(CANDIDATE_LOCATIONS_PATH)
+    existing_charger_locations = load_existing_charger_locations(EXISTING_CHARGERS_PATH)
+    destination_weights = load_heatmap_weights(candidate_locations, HEATMAP_DENSITY_PATH)
+    walking_network = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
+    print(
+        f"Loaded walking network: {walking_network.trace_count} traces, "
+        f"{len(walking_network.network_nodes)} connected nodes"
+    )
+
+    OUTPUT_DIR.mkdir(exist_ok=True)
+
+    results = []
+    for scenario_name, config in SCENARIOS.items():
+        print(f"Running scenario: {scenario_name}")
+        results.append(
+            run_simulation(
+                scenario_name,
+                config,
+                candidate_locations,
+                destination_weights,
+                existing_charger_locations,
+                walking_network,
+                OUTPUT_DIR,
+            )
+        )
+
+    summary_path = write_summary(OUTPUT_DIR, results)
+    print_summary(results)
+    print(f"\nWrote scenario summary: {summary_path}")
+
+#don’t put the simulation run directly in the middle of the file use def main() above
+if __name__ == "__main__":
+    main()
