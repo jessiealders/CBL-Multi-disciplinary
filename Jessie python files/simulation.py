@@ -8,13 +8,11 @@ from dataclasses import dataclass
 import numpy as np
 from pyproj import Transformer
 
-
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.shared.walking_network import WalkingNetwork
-
 
 # -----------------------------
 # Paths and scenario settings
@@ -30,6 +28,7 @@ EXISTING_CHARGERS_PATH = (
     / "existing_charging_points_strijp_s.csv"
 )
 HEATMAP_DENSITY_PATH = ROOT / "processed data" / "gpx_heatmap_density.npz"
+EV_DEMAND_HEATMAP_PATH = ROOT / "processed data" / "heatmap4_density.npz"
 WALKING_NETWORK_PATH = ROOT / "processed data" / "spatial" / "walking_traces.geojson"
 OUTPUT_DIR = ROOT / "processed data" / "simulation"
 
@@ -128,13 +127,11 @@ def load_existing_charger_locations(path: Path) -> list[CandidateLocation]:
     return locations
 
 
-def load_heatmap_weights(
+def _sample_density(
     locations: list["CandidateLocation"], density_path: Path
-) -> list[float] | None:
+) -> np.ndarray | None:
     if not density_path.exists():
-        print(
-            f"Heatmap density file not found: {density_path}. Using uniform destination weights."
-        )
+        print(f"Heatmap density file not found: {density_path}.")
         return None
     data = np.load(density_path)
     counts = data["counts"]  # shape (bins_y, bins_x), EPSG:3857
@@ -142,16 +139,46 @@ def load_heatmap_weights(
     ymin, ymax = float(data["ymin"]), float(data["ymax"])
     bins_y, bins_x = counts.shape
 
-    weights: list[float] = []
-    for loc in locations:
+    samples = np.empty(len(locations))
+    for i, loc in enumerate(locations):
         x3857, y3857 = RD_TO_WEB_MERCATOR.transform(loc.x, loc.y)
         ix = int((x3857 - xmin) / (xmax - xmin) * bins_x)
         iy = int((y3857 - ymin) / (ymax - ymin) * bins_y)
         ix = max(0, min(ix, bins_x - 1))
         iy = max(0, min(iy, bins_y - 1))
-        # +1 so every location retains at least a baseline probability
-        weights.append(float(counts[iy, ix]) + 1.0)
-    return weights
+        samples[i] = counts[iy, ix]
+    return samples
+
+
+def load_blended_heatmap_weights(
+    locations: list["CandidateLocation"],
+    gpx_path: Path,
+    ev_path: Path,
+    gpx_share: float = 0.20,
+    ev_share: float = 0.80,
+) -> list[float] | None:
+    gpx_samples = _sample_density(locations, gpx_path)
+    ev_samples = _sample_density(locations, ev_path)
+
+    if gpx_samples is None and ev_samples is None:
+        print("Both heatmap files missing. Using uniform destination weights.")
+        return None
+
+    def _normalise(arr: np.ndarray) -> np.ndarray:
+        lo, hi = arr.min(), arr.max()
+        return arr / hi if hi > 0 else arr
+
+    if gpx_samples is None:
+        blended = _normalise(ev_samples)
+    elif ev_samples is None:
+        blended = _normalise(gpx_samples)
+    else:
+        blended = gpx_share * _normalise(gpx_samples) + ev_share * _normalise(
+            ev_samples
+        )
+
+    # +1 baseline so no location has zero probability
+    return [float(v) + 1.0 for v in blended]
 
 
 # -----------------------------
@@ -238,12 +265,13 @@ class Source:
         # Generate cars, start the charging process and add them to the list of cars
         for car_id in range(self.number_cars):
             car = Car(self)
-            self.env.process(car.charge(self.env, f'Car {car_id}'))
+            self.env.process(car.charge(self.env, f"Car {car_id}"))
             self.cars.append(car)
 
         # The generate function needs to yield a timeout, otherwise it's not valid
         # This line basically does nothing
         yield self.env.timeout(0)
+
 
 class Charger(simpy.Resource):
     """
@@ -589,8 +617,12 @@ def run_simulation(
     )
     env.run(until=simulation_time)
 
-    completed_cars = [car for car in src.cars if getattr(car, "status", None) == "charged"]
-    gave_up_cars = [car for car in src.cars if getattr(car, "status", None) == "gave_up"]
+    completed_cars = [
+        car for car in src.cars if getattr(car, "status", None) == "charged"
+    ]
+    gave_up_cars = [
+        car for car in src.cars if getattr(car, "status", None) == "gave_up"
+    ]
     total_walkdist = sum(car.walkingDist for car in completed_cars)
     total_utilization = sum(
         charger.chargingTime / (simulation_time * charger.capacity)
@@ -611,12 +643,12 @@ def run_simulation(
         "gave_up": len(gave_up_cars),
         "completed_pct": len(completed_cars) / num_cars * 100,
         "gave_up_pct": len(gave_up_cars) / num_cars * 100,
-        "avg_walking_dist_m": total_walkdist / len(completed_cars)
-        if completed_cars
-        else 0,
-        "avg_charger_utilization": total_utilization / len(src.chargers)
-        if src.chargers
-        else 0,
+        "avg_walking_dist_m": (
+            total_walkdist / len(completed_cars) if completed_cars else 0
+        ),
+        "avg_charger_utilization": (
+            total_utilization / len(src.chargers) if src.chargers else 0
+        ),
         "charger_fids": charger_fids,
         "events_file": str(events_path),
     }
@@ -650,7 +682,9 @@ def print_summary(results: list[dict]) -> None:
 def main() -> None:
     candidate_locations = load_candidate_locations(CANDIDATE_LOCATIONS_PATH)
     existing_charger_locations = load_existing_charger_locations(EXISTING_CHARGERS_PATH)
-    destination_weights = load_heatmap_weights(candidate_locations, HEATMAP_DENSITY_PATH)
+    destination_weights = load_blended_heatmap_weights(
+        candidate_locations, HEATMAP_DENSITY_PATH, EV_DEMAND_HEATMAP_PATH
+    )
     walking_network = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
     print(
         f"Loaded walking network: {walking_network.trace_count} traces, "
@@ -678,6 +712,7 @@ def main() -> None:
     print_summary(results)
     print(f"\nWrote scenario summary: {summary_path}")
 
-#don’t put the simulation run directly in the middle of the file use def main() above
+
+# don’t put the simulation run directly in the middle of the file use def main() above
 if __name__ == "__main__":
     main()
