@@ -8,13 +8,11 @@ from dataclasses import dataclass
 import numpy as np
 from pyproj import Transformer
 
-
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.shared.walking_network import WalkingNetwork
-
 
 # -----------------------------
 # Paths and scenario settings
@@ -30,6 +28,7 @@ EXISTING_CHARGERS_PATH = (
     / "existing_charging_points_strijp_s.csv"
 )
 HEATMAP_DENSITY_PATH = ROOT / "processed data" / "gpx_heatmap_density.npz"
+EV_DEMAND_HEATMAP_PATH = ROOT / "processed data" / "heatmap4_density.npz"
 WALKING_NETWORK_PATH = ROOT / "processed data" / "spatial" / "walking_traces.geojson"
 OUTPUT_DIR = ROOT / "processed data" / "simulation"
 
@@ -45,6 +44,7 @@ SCENARIOS = {
         "simulation_time": 200,
         "min_charge_time": 1,
         "max_charge_time": 30,
+        "max_wait_time": 5,
         "walking_threshold_m": 300,
         "seed": 10,
     },
@@ -61,6 +61,9 @@ def rd_to_wgs84(x, y):
     lon, lat = RD_TO_WGS84.transform(x, y)
     return lat, lon
 
+def p(rel_windows_path: str) -> Path:
+    """Windows to POSIX path conversion."""
+    return ROOT.joinpath(*rel_windows_path.split("\\"))
 
 # -----------------------------
 # Data models and loading
@@ -128,13 +131,11 @@ def load_existing_charger_locations(path: Path) -> list[CandidateLocation]:
     return locations
 
 
-def load_heatmap_weights(
+def _sample_density(
     locations: list["CandidateLocation"], density_path: Path
-) -> list[float] | None:
+) -> np.ndarray | None:
     if not density_path.exists():
-        print(
-            f"Heatmap density file not found: {density_path}. Using uniform destination weights."
-        )
+        print(f"Heatmap density file not found: {density_path}.")
         return None
     data = np.load(density_path)
     counts = data["counts"]  # shape (bins_y, bins_x), EPSG:3857
@@ -142,16 +143,46 @@ def load_heatmap_weights(
     ymin, ymax = float(data["ymin"]), float(data["ymax"])
     bins_y, bins_x = counts.shape
 
-    weights: list[float] = []
-    for loc in locations:
+    samples = np.empty(len(locations))
+    for i, loc in enumerate(locations):
         x3857, y3857 = RD_TO_WEB_MERCATOR.transform(loc.x, loc.y)
         ix = int((x3857 - xmin) / (xmax - xmin) * bins_x)
         iy = int((y3857 - ymin) / (ymax - ymin) * bins_y)
         ix = max(0, min(ix, bins_x - 1))
         iy = max(0, min(iy, bins_y - 1))
-        # +1 so every location retains at least a baseline probability
-        weights.append(float(counts[iy, ix]) + 1.0)
-    return weights
+        samples[i] = counts[iy, ix]
+    return samples
+
+
+def load_blended_heatmap_weights(
+    locations: list["CandidateLocation"],
+    gpx_path: Path,
+    ev_path: Path,
+    gpx_share: float = 0.20,
+    ev_share: float = 0.80,
+) -> list[float] | None:
+    gpx_samples = _sample_density(locations, gpx_path)
+    ev_samples = _sample_density(locations, ev_path)
+
+    if gpx_samples is None and ev_samples is None:
+        print("Both heatmap files missing. Using uniform destination weights.")
+        return None
+
+    def _normalise(arr: np.ndarray) -> np.ndarray:
+        lo, hi = arr.min(), arr.max()
+        return arr / hi if hi > 0 else arr
+
+    if gpx_samples is None:
+        blended = _normalise(ev_samples)
+    elif ev_samples is None:
+        blended = _normalise(gpx_samples)
+    else:
+        blended = gpx_share * _normalise(gpx_samples) + ev_share * _normalise(
+            ev_samples
+        )
+
+    # +1 baseline so no location has zero probability
+    return [float(v) + 1.0 for v in blended]
 
 
 # -----------------------------
@@ -300,6 +331,7 @@ class Car:
         else:
             self.destination = random.choice(src.candidate_locations)
         self.waitingTime = None
+        self.totalWaitingTime = 0.0
         self.walkingDist = None
         self.status = "created"
         # Create a dictionary of the closest chargers, charger as keys and walking distance as values
@@ -340,11 +372,13 @@ class Car:
             # Make request for charger
             charger = self.chosenCharger
             req = charger.request()
-            # results = request if it went through, otherwise wait 1 [time unit]
-            results = yield req | env.timeout(1)
+            # Wait up to max_wait_time for this charger before trying the next one.
+            wait_start = env.now
+            results = yield req | env.timeout(self.src.config.get("max_wait_time", 5))
             # Check if request went through
             if req in results:
-                self.waitingTime = env.now - self.arrivalTime
+                self.totalWaitingTime += env.now - wait_start
+                self.waitingTime = self.totalWaitingTime
                 self.finalCharger = charger
                 self.src.log(
                     "start_charge",
@@ -352,6 +386,7 @@ class Car:
                     f"starting to charge at {charger}",
                     charger_id=charger.charger_id,
                     charger_fid=(charger.location.fid if charger.location else None),
+                    waited=float(self.waitingTime),
                 )
                 # Find walkingDist to chosen charger
                 self.walkingDist = self.closestChargers[self.chosenCharger]
@@ -376,6 +411,7 @@ class Car:
             else:
                 # Cancel the request for the current (unavailable) charger
                 req.cancel()
+                self.totalWaitingTime += env.now - wait_start
                 # Save the unavailable charger
                 lastCharger = self.chosenCharger
                 # Find the next best charger
@@ -431,7 +467,10 @@ class Car:
             # Fallback to old behavior if no locations
             charger_idx = self.src.chargers.index(charger)
             return abs(charger_idx - 0)
-        if self.src.walking_network:
+        if (
+            self.src.config.get("distance_mode", "network") == "network"
+            and self.src.walking_network
+        ):
             destination_lat, destination_lon = self.destination.lat_lon()
             charger_lat, charger_lon = charger.location.lat_lon()
             return self.src.walking_network.distance_m(
@@ -456,7 +495,10 @@ class Car:
             charger1_idx = self.src.chargers.index(charger1)
             charger2_idx = self.src.chargers.index(charger2)
             return abs(charger1_idx - charger2_idx)
-        if self.src.walking_network:
+        if (
+            self.src.config.get("distance_mode", "network") == "network"
+            and self.src.walking_network
+        ):
             charger1_lat, charger1_lon = charger1.location.lat_lon()
             charger2_lat, charger2_lon = charger2.location.lat_lon()
             dist_m = self.src.walking_network.distance_m(
@@ -507,15 +549,47 @@ def select_spread_out_locations(
     return chosen
 
 
+def parse_location_fids(raw_fids) -> list[int]:
+    if raw_fids is None:
+        return []
+    if isinstance(raw_fids, str):
+        parts = raw_fids.replace(",", ";").split(";")
+        return [int(float(part.strip())) for part in parts if part.strip()]
+    return [int(float(fid)) for fid in raw_fids]
+
+
+def select_fixed_locations(
+    locations: list[CandidateLocation], fixed_fids
+) -> list[CandidateLocation]:
+    fids = parse_location_fids(fixed_fids)
+    by_fid = {location.fid: location for location in locations}
+    missing = [fid for fid in fids if fid not in by_fid]
+    if missing:
+        raise ValueError(f"Fixed charger FIDs not found in candidate locations: {missing}")
+    return [by_fid[fid] for fid in fids]
+
+#decides where the chargers will be placed before the simulation starts.
 def select_charger_locations(
     strategy: str,
     number_chargers: int,
     candidate_locations: list[CandidateLocation],
     destination_weights: list[float] | None,
     existing_charger_locations: list[CandidateLocation],
+    config: dict | None = None,
+    walking_network: WalkingNetwork | None = None,
 ) -> list[CandidateLocation]:
+    config = config or {}
+    fixed_charger_fids = config.get("fixed_charger_fids")
+    if fixed_charger_fids is not None:
+        return select_fixed_locations(
+            existing_charger_locations + candidate_locations, fixed_charger_fids
+        )
+    if strategy == "fixed":
+        raise ValueError("Use fixed_charger_fids when charger_strategy is 'fixed'.")
     if strategy == "existing":
         return existing_charger_locations[:number_chargers]
+    
+    # choose locations with highest demand weight ?
     if strategy == "demand_hotspots" and destination_weights:
         weighted = sorted(
             zip(candidate_locations, destination_weights),
@@ -523,8 +597,15 @@ def select_charger_locations(
             reverse=True,
         )
         return [location for location, _ in weighted[:number_chargers]]
+    # Ramdom location
     if strategy == "spread_out":
         return select_spread_out_locations(candidate_locations, number_chargers)
+    
+    if strategy in {"optimized", "optimized_minimum"}:
+        raise ValueError(
+            "Run optimization outside simulation.py, then pass the result with "
+            "fixed_charger_fids."
+        )
 
     return random.sample(candidate_locations, k=number_chargers)
 
@@ -548,6 +629,13 @@ def write_events(events_dir: Path, scenario_name: str, events: list[dict]) -> Pa
         writer.writerows(events)
     return events_path
 
+def write_summary(events_dir: Path, results: list[dict]) -> Path:
+    summary_path = events_dir / "simulation_scenario_summary.csv"
+    with summary_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
+        writer.writeheader()
+        writer.writerows(results)
+    return summary_path
 
 # -----------------------------
 # Simulation runner
@@ -574,6 +662,8 @@ def run_simulation(
         candidate_locations,
         destination_weights,
         existing_charger_locations,
+        config,
+        walking_network,
     )
 
     env = simpy.Environment()
@@ -590,9 +680,14 @@ def run_simulation(
     )
     env.run(until=simulation_time)
 
-    completed_cars = [car for car in src.cars if getattr(car, "status", None) == "charged"]
-    gave_up_cars = [car for car in src.cars if getattr(car, "status", None) == "gave_up"]
+    completed_cars = [
+        car for car in src.cars if getattr(car, "status", None) == "charged"
+    ]
+    gave_up_cars = [
+        car for car in src.cars if getattr(car, "status", None) == "gave_up"
+    ]
     total_walkdist = sum(car.walkingDist for car in completed_cars)
+    total_waiting = sum(car.waitingTime for car in completed_cars)
     total_utilization = sum(
         charger.chargingTime / (simulation_time * charger.capacity)
         for charger in src.chargers
@@ -607,42 +702,38 @@ def run_simulation(
         "charger_strategy": config["charger_strategy"],
         "num_cars": num_cars,
         "num_chargers": len(charger_locations),
+        "max_wait_time": config.get("max_wait_time", 5),
         "walking_threshold_m": config["walking_threshold_m"],
         "completed_charging": len(completed_cars),
         "gave_up": len(gave_up_cars),
         "completed_pct": len(completed_cars) / num_cars * 100,
         "gave_up_pct": len(gave_up_cars) / num_cars * 100,
-        "avg_walking_dist_m": total_walkdist / len(completed_cars)
-        if completed_cars
-        else 0,
-        "avg_charger_utilization": total_utilization / len(src.chargers)
-        if src.chargers
-        else 0,
+        "avg_waiting_time": (
+            total_waiting / len(completed_cars) if completed_cars else 0
+        ),
+        "avg_walking_dist_m": (
+            total_walkdist / len(completed_cars) if completed_cars else 0
+        ),
+        "avg_charger_utilization": (
+            total_utilization / len(src.chargers) if src.chargers else 0
+        ),
         "charger_fids": charger_fids,
         "events_file": str(events_path),
     }
-
-
-def write_summary(events_dir: Path, results: list[dict]) -> Path:
-    summary_path = events_dir / "simulation_scenario_summary.csv"
-    with summary_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
-        writer.writeheader()
-        writer.writerows(results)
-    return summary_path
 
 
 def print_summary(results: list[dict]) -> None:
     print("\nSimulation result")
     print(
         f"{'scenario':<24} {'completed %':>11} {'gave up %':>9} "
-        f"{'avg walk m':>11} {'utilization':>11}"
+        f"{'avg wait':>9} {'avg walk m':>11} {'utilization':>11}"
     )
     for result in results:
         print(
             f"{result['scenario']:<24} "
             f"{result['completed_pct']:>11.1f} "
             f"{result['gave_up_pct']:>9.1f} "
+            f"{result['avg_waiting_time']:>9.2f} "
             f"{result['avg_walking_dist_m']:>11.1f} "
             f"{result['avg_charger_utilization']:>11.2f}"
         )
@@ -651,7 +742,9 @@ def print_summary(results: list[dict]) -> None:
 def main() -> None:
     candidate_locations = load_candidate_locations(CANDIDATE_LOCATIONS_PATH)
     existing_charger_locations = load_existing_charger_locations(EXISTING_CHARGERS_PATH)
-    destination_weights = load_heatmap_weights(candidate_locations, HEATMAP_DENSITY_PATH)
+    destination_weights = load_blended_heatmap_weights(
+        candidate_locations, HEATMAP_DENSITY_PATH, EV_DEMAND_HEATMAP_PATH
+    )
     walking_network = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
     print(
         f"Loaded walking network: {walking_network.trace_count} traces, "

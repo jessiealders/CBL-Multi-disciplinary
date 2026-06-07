@@ -2,13 +2,29 @@ from __future__ import annotations
 
 import csv
 import random
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from simulation import load_candidate_locations, p, run_simulation
-
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.shared.walking_network import WalkingNetwork
+
+from simulation import (
+    CANDIDATE_LOCATIONS_PATH,
+    EV_DEMAND_HEATMAP_PATH,
+    EXISTING_CHARGERS_PATH,
+    HEATMAP_DENSITY_PATH,
+    OUTPUT_DIR,
+    WALKING_NETWORK_PATH,
+    load_blended_heatmap_weights,
+    load_candidate_locations,
+    load_existing_charger_locations,
+    run_simulation,
+)
 
 
 # -------------------------
@@ -49,62 +65,58 @@ class RunConfig:
     write_events: bool = False
 
 
-def run_one_day(candidate_locations, cfg: RunConfig) -> dict[str, Any]:
+def run_one_day(
+    candidate_locations,
+    destination_weights,
+    existing_charger_locations,
+    walking_network,
+    cfg: RunConfig,
+) -> dict[str, Any]:
     random.seed(cfg.seed)
     arrival_times = generate_arrival_times(cfg.arrivals_per_hour)
 
-    src, chosen_locations = run_simulation(
-        candidate_locations=candidate_locations,
-        num_chargers=cfg.num_chargers,
-        arrival_times=arrival_times,
-        simulation_time=24 * 60,
-        min_charge_time=cfg.min_charge_time,
-        max_charge_time=cfg.max_charge_time,
-        walking_threshold_m=cfg.walking_threshold_m,
-        walking_speed_m_per_min=cfg.walking_speed_m_per_min,
-        seed=cfg.seed,
-        verbose=False,
+    events_dir = ROOT / "other data" / "scenario_events"
+    events_dir.mkdir(parents=True, exist_ok=True)
+    config = {
+        "description": cfg.scenario,
+        "charger_strategy": "random",
+        "num_cars": len(arrival_times),
+        "num_chargers": cfg.num_chargers,
+        "arrival_times": arrival_times,
+        "simulation_time": 24 * 60,
+        "min_charge_time": cfg.min_charge_time,
+        "max_charge_time": cfg.max_charge_time,
+        "walking_threshold_m": cfg.walking_threshold_m,
+        "walking_speed_m_per_min": cfg.walking_speed_m_per_min,
+        "seed": cfg.seed,
+        "verbose": False,
+        "write_events": cfg.write_events, 
+    }
+    result = run_simulation(
+        f"{cfg.scenario}_seed{cfg.seed}",
+        config,
+        candidate_locations,
+        destination_weights,
+        existing_charger_locations,
+        walking_network,
+        events_dir,
     )
 
     total = len(arrival_times)
-    charged = sum(1 for car in src.cars if getattr(car, "status", None) == "charged")
-    gave_up = sum(1 for car in src.cars if getattr(car, "status", None) == "gave_up")
-
-    wait_times = [car.waitingTime for car in src.cars if car.waitingTime is not None]
-    walk_dists = [car.walkingDist for car in src.cars if car.walkingDist is not None]
-
-    avg_wait = sum(wait_times) / len(wait_times) if wait_times else None
-    avg_walk = sum(walk_dists) / len(walk_dists) if walk_dists else None
-
-    utilizations = [c.chargingTime / (24 * 60 * c.capacity) for c in src.chargers]
-    util_mean = sum(utilizations) / len(utilizations) if utilizations else None
-    util_max = max(utilizations) if utilizations else None
-
-    chosen_fids = [c.fid for c in chosen_locations]
-
-    if cfg.write_events:
-        out_dir = ROOT / "other data" / "scenario_events"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / f"{cfg.scenario}_seed{cfg.seed}.csv"
-        with out_path.open("w", newline="", encoding="utf-8") as f:
-            if src.events:
-                writer = csv.DictWriter(f, fieldnames=sorted({k for e in src.events for k in e.keys()}))
-                writer.writeheader()
-                writer.writerows(src.events)
 
     return {
         "scenario": cfg.scenario,
         "seed": cfg.seed,
         "num_chargers": cfg.num_chargers,
         "total_arrivals": total,
-        "charged": charged,
-        "gave_up": gave_up,
-        "pct_gave_up": (gave_up / total * 100) if total else 0.0,
-        "avg_wait_min": avg_wait,
-        "avg_walk_m": avg_walk,
-        "util_mean": util_mean,
-        "util_max": util_max,
-        "chosen_fids": ";".join(map(str, chosen_fids)),
+        "charged": result["completed_charging"],
+        "gave_up": result["gave_up"],
+        "pct_gave_up": result["gave_up_pct"],
+        "avg_wait_min": result["avg_wait_min"],
+        "avg_walk_m": result["avg_walking_dist_m"],
+        "util_mean": result["avg_charger_utilization"],
+        "util_max": result["max_charger_utilization"],
+        "chosen_fids": result["charger_fids"],
     }
 
 
@@ -117,7 +129,13 @@ def scale_profile(profile: list[int], factor: float) -> list[int]:
 
 
 def main() -> None:
-    candidates = load_candidate_locations(p(r"other data\freepacement_lessdata_strijp_lili.csv"))
+    candidates = load_candidate_locations(CANDIDATE_LOCATIONS_PATH)
+    existing_charger_locations = load_existing_charger_locations(EXISTING_CHARGERS_PATH)
+    destination_weights = load_blended_heatmap_weights(
+        candidates, HEATMAP_DENSITY_PATH, EV_DEMAND_HEATMAP_PATH
+    )
+    walking_network = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
+    OUTPUT_DIR.mkdir(exist_ok=True)
 
     # A simple default "realistic-ish" arrival curve.
     # We can tune these numbers later
@@ -193,7 +211,15 @@ def main() -> None:
 
     results: list[dict[str, Any]] = []
     for cfg in runs:
-        results.append(run_one_day(candidates, cfg))
+        results.append(
+            run_one_day(
+                candidates,
+                destination_weights,
+                existing_charger_locations,
+                walking_network,
+                cfg,
+            )
+        )
 
     out_path = ROOT / "other data" / "scenario_results.csv"
     with out_path.open("w", newline="", encoding="utf-8") as f:
