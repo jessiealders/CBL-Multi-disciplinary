@@ -35,6 +35,9 @@ OUTPUT_DIR = ROOT / "processed data" / "simulation"
 RD_TO_WGS84 = Transformer.from_crs("EPSG:28992", "EPSG:4326", always_xy=True)
 RD_TO_WEB_MERCATOR = Transformer.from_crs("EPSG:28992", "EPSG:3857", always_xy=True)
 
+FIXED_EXISTING_FIDS = {1, 7, 17, 19}
+
+
 SCENARIOS = {
     "current_situation": {
         "description": "Current charging points in Strijp-S.",
@@ -280,12 +283,12 @@ class Source:
 class Charger(simpy.Resource):
     """
     Charger: Simpy Resource: provides a service (charging), can be occupied by cars
-    Parameters: environment, charger id, capacity (= 1 because only 1 car can charge at each charger)
+    Parameters: environment, charger id, capacity (= 5 because only 1 car can charge at each charger)
     """
 
     # Initialize the charger
     def __init__(
-        self, env, charger_id, capacity=1, location: CandidateLocation | None = None
+        self, env, charger_id, capacity=5, location: CandidateLocation | None = None
     ):
         super().__init__(env, capacity)
         self.charger_id = charger_id
@@ -467,18 +470,19 @@ class Car:
             # Fallback to old behavior if no locations
             charger_idx = self.src.chargers.index(charger)
             return abs(charger_idx - 0)
-        if (
-            self.src.config.get("distance_mode", "network") == "network"
-            and self.src.walking_network
-        ):
-            destination_lat, destination_lon = self.destination.lat_lon()
-            charger_lat, charger_lon = charger.location.lat_lon()
-            return self.src.walking_network.distance_m(
-                destination_lat,
-                destination_lon,
-                charger_lat,
-                charger_lon,
-            )
+        # if (
+        #     self.src.config.get("distance_mode", "network") == "network"
+        #     and self.src.walking_network
+
+        # ):
+        #     destination_lat, destination_lon = self.destination.lat_lon()
+        #     charger_lat, charger_lon = charger.location.lat_lon()
+        #     return self.src.walking_network.distance_m(
+        #         destination_lat,
+        #         destination_lon,
+        #         charger_lat,
+        #         charger_lon,
+        #     )
         dx = charger.location.x - self.destination.x
         dy = charger.location.y - self.destination.y
         return (dx * dx + dy * dy) ** 0.5
@@ -495,19 +499,19 @@ class Car:
             charger1_idx = self.src.chargers.index(charger1)
             charger2_idx = self.src.chargers.index(charger2)
             return abs(charger1_idx - charger2_idx)
-        if (
-            self.src.config.get("distance_mode", "network") == "network"
-            and self.src.walking_network
-        ):
-            charger1_lat, charger1_lon = charger1.location.lat_lon()
-            charger2_lat, charger2_lon = charger2.location.lat_lon()
-            dist_m = self.src.walking_network.distance_m(
-                charger1_lat,
-                charger1_lon,
-                charger2_lat,
-                charger2_lon,
-            )
-            return dist_m / self.src.config.get("walking_speed_m_per_min", 83.3)
+        # if (
+        #     self.src.config.get("distance_mode", "network") == "network"
+        #     and self.src.walking_network
+        # ):
+        #     charger1_lat, charger1_lon = charger1.location.lat_lon()
+        #     charger2_lat, charger2_lon = charger2.location.lat_lon()
+        #     dist_m = self.src.walking_network.distance_m(
+        #         charger1_lat,
+        #         charger1_lon,
+        #         charger2_lat,
+        #         charger2_lon,
+        #     )
+        #     return dist_m / self.src.config.get("walking_speed_m_per_min", 83.3)
         dx = charger2.location.x - charger1.location.x
         dy = charger2.location.y - charger1.location.y
         dist_m = (dx * dx + dy * dy) ** 0.5
@@ -588,7 +592,7 @@ def select_charger_locations(
         raise ValueError("Use fixed_charger_fids when charger_strategy is 'fixed'.")
     if strategy == "existing":
         return existing_charger_locations[:number_chargers]
-    
+
     # choose locations with highest demand weight ?
     if strategy == "demand_hotspots" and destination_weights:
         weighted = sorted(
@@ -600,14 +604,35 @@ def select_charger_locations(
     # Ramdom location
     if strategy == "spread_out":
         return select_spread_out_locations(candidate_locations, number_chargers)
-    
+
     if strategy in {"optimized", "optimized_minimum"}:
         raise ValueError(
             "Run optimization outside simulation.py, then pass the result with "
             "fixed_charger_fids."
         )
 
-    return random.sample(candidate_locations, k=number_chargers)
+    # Fixed locations for the existing infrastructure
+    fixed_locations = [
+        loc for loc in candidate_locations
+        if loc.fid in FIXED_EXISTING_FIDS
+    ]
+
+    if number_chargers <= len(fixed_locations):
+        return fixed_locations[:number_chargers]
+
+    remaining_locations = [
+        loc for loc in candidate_locations
+        if loc.fid not in FIXED_EXISTING_FIDS
+    ]
+
+    additional_needed = number_chargers - len(fixed_locations)
+
+    random_locations = random.sample(
+        remaining_locations,
+        k=additional_needed,
+    )
+
+    return fixed_locations + random_locations
 
 
 # -----------------------------
@@ -717,8 +742,7 @@ def run_simulation(
         "avg_charger_utilization": (
             total_utilization / len(src.chargers) if src.chargers else 0
         ),
-        "charger_fids": charger_fids,
-        "events_file": str(events_path),
+        "charger_fids": charger_fids
     }
 
 
