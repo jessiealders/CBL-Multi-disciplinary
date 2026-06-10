@@ -163,6 +163,8 @@ def load_blended_heatmap_weights(
     ev_path: Path,
     gpx_share: float = 0.20,
     ev_share: float = 0.80,
+    low_weight_floor: float = 0.07,
+    low_weight_exponent: float = 2,
 ) -> list[float] | None:
     gpx_samples = _sample_density(locations, gpx_path)
     ev_samples = _sample_density(locations, ev_path)
@@ -172,7 +174,7 @@ def load_blended_heatmap_weights(
         return None
 
     def _normalise(arr: np.ndarray) -> np.ndarray:
-        lo, hi = arr.min(), arr.max()
+        hi = arr.max()
         return arr / hi if hi > 0 else arr
 
     if gpx_samples is None:
@@ -184,8 +186,8 @@ def load_blended_heatmap_weights(
             ev_samples
         )
 
-    # +1 baseline so no location has zero probability
-    return [float(v) + 1.0 for v in blended]
+    penalized = low_weight_floor + np.power(blended, low_weight_exponent)
+    return [float(v) for v in penalized]
 
 
 # -----------------------------
@@ -207,6 +209,7 @@ class Source:
         config,
         number_cars,
         number_chargers,
+        rng: random.Random,
         candidate_locations=None,
         charger_locations=None,
         destination_weights=None,
@@ -217,6 +220,7 @@ class Source:
         self.config = config
         self.number_cars = number_cars
         self.number_chargers = number_chargers
+        self.rng = rng
         self.chargers = []
         self.cars = []
         self.verbose = verbose
@@ -257,7 +261,7 @@ class Source:
                 raise ValueError(
                     f"Requested {self.number_chargers} chargers but only {len(self.candidate_locations)} candidate locations exist."
                 )
-            self.chosen_charger_locations = random.sample(
+            self.chosen_charger_locations = self.rng.sample(
                 self.candidate_locations, k=self.number_chargers
             )
         else:
@@ -312,15 +316,15 @@ class Car:
     Parameters: source object (for accessing the list of chargers)
     """
 
-    def __init__(self, src):
+    def __init__(self, src: Source):
         # Change the generation of arrival times and destinations to distributions based on real data
         self.src = src
         # Randomly generate how long it takes to charge
-        self.chargeTime = random.randint(
+        self.chargeTime = self.src.rng.randint(
             src.config["min_charge_time"], src.config["max_charge_time"]
         )
         # Randomly choose an arrival time
-        self.arrivalTime = random.randint(0, src.config["simulation_time"])
+        self.arrivalTime = self.src.rng.randint(0, src.config["simulation_time"])
         # Destination is now a real centroid point (x,y). We sample it from the candidate locations.
         # (Assumption for now: trips start/end within the same candidate set.)
         if not src.candidate_locations:
@@ -328,11 +332,11 @@ class Car:
                 "No candidate locations loaded. Cannot pick a geographic destination."
             )
         if src.destination_weights:
-            self.destination = random.choices(
+            self.destination = self.src.rng.choices(
                 src.candidate_locations, weights=src.destination_weights, k=1
             )[0]
         else:
-            self.destination = random.choice(src.candidate_locations)
+            self.destination = self.src.rng.choice(src.candidate_locations)
         self.waitingTime = None
         self.totalWaitingTime = 0.0
         self.walkingDist = None
@@ -579,6 +583,7 @@ def select_charger_locations(
     candidate_locations: list[CandidateLocation],
     destination_weights: list[float] | None,
     existing_charger_locations: list[CandidateLocation],
+    rng: random.Random,
     config: dict | None = None,
     walking_network: WalkingNetwork | None = None,
 ) -> list[CandidateLocation]:
@@ -627,7 +632,7 @@ def select_charger_locations(
 
     additional_needed = number_chargers - len(fixed_locations)
 
-    random_locations = random.sample(
+    random_locations = rng.sample(
         remaining_locations,
         k=additional_needed,
     )
@@ -675,11 +680,11 @@ def run_simulation(
     existing_charger_locations: list[CandidateLocation],
     walking_network: WalkingNetwork,
     events_dir: Path,
+    rng: random.Random,
 ) -> dict:
     simulation_time = config["simulation_time"]
     num_cars = config["num_cars"]
     num_chargers = config["num_chargers"]
-    random.seed(config["seed"])
 
     charger_locations = select_charger_locations(
         config["charger_strategy"],
@@ -687,6 +692,7 @@ def run_simulation(
         candidate_locations,
         destination_weights,
         existing_charger_locations,
+        rng,
         config,
         walking_network,
     )
@@ -697,6 +703,7 @@ def run_simulation(
         config,
         num_cars,
         len(charger_locations),
+        rng,
         candidate_locations=candidate_locations,
         charger_locations=charger_locations,
         destination_weights=destination_weights,
@@ -780,6 +787,8 @@ def main() -> None:
     results = []
     for scenario_name, config in SCENARIOS.items():
         print(f"Running scenario: {scenario_name}")
+        rng = random.Random()
+        rng.seed(config["seed"])
         results.append(
             run_simulation(
                 scenario_name,
@@ -789,6 +798,7 @@ def main() -> None:
                 existing_charger_locations,
                 walking_network,
                 OUTPUT_DIR,
+                rng=rng,
             )
         )
 

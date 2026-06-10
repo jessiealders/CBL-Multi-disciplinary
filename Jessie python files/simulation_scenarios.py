@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 from collections import defaultdict
 from statistics import mean
+from concurrent.futures import ProcessPoolExecutor
+import os
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -34,7 +36,7 @@ from simulation import (
 # -------------------------
 
 
-def generate_arrival_times(arrivals_per_hour: list[int]) -> list[float]:
+def generate_arrival_times(rng: random.Random, arrivals_per_hour: list[int]) -> list[float]:
     """Return arrival times in minutes in [0, 1440).
 
     For each hour, generate N arrivals uniformly at random inside that hour.
@@ -46,7 +48,7 @@ def generate_arrival_times(arrivals_per_hour: list[int]) -> list[float]:
     for h, n in enumerate(arrivals_per_hour):
         start = h * 60
         for _ in range(int(n)):
-            times.append(start + random.random() * 60)
+            times.append(start + rng.random() * 60)
     times.sort()
     return times
 
@@ -74,8 +76,9 @@ def run_one_day(
     walking_network,
     cfg: RunConfig,
 ) -> dict[str, Any]:
-    random.seed(cfg.seed)
-    arrival_times = generate_arrival_times(cfg.arrivals_per_hour)
+    rng = random.Random()
+    rng.seed(cfg.seed)
+    arrival_times = generate_arrival_times(rng, cfg.arrivals_per_hour)
 
     events_dir = ROOT / "other data" / "scenario_events"
     events_dir.mkdir(parents=True, exist_ok=True)
@@ -102,6 +105,7 @@ def run_one_day(
         existing_charger_locations,
         walking_network,
         events_dir,
+        rng=rng,
     )
 
     total = len(arrival_times)
@@ -129,6 +133,19 @@ def run_one_day(
 def scale_profile(profile: list[int], factor: float) -> list[int]:
     return [int(round(x * factor)) for x in profile]
 
+_shared = {}
+
+def _init(candidates, weights, existing, network):
+    _shared["candidates"] = candidates
+    _shared["weights"] = weights
+    _shared["existing"] = existing
+    _shared["network"] = network
+
+def _run(cfg):
+    return run_one_day(
+        _shared["candidates"], _shared["weights"],
+        _shared["existing"], _shared["network"], cfg
+    )
 
 def main() -> None:
     candidates = load_candidate_locations(CANDIDATE_LOCATIONS_PATH)
@@ -215,16 +232,13 @@ def main() -> None:
                 )
 
     results: list[dict[str, Any]] = []
-    for cfg in runs:
-        results.append(
-            run_one_day(
-                candidates,
-                destination_weights,
-                existing_charger_locations,
-                walking_network,
-                cfg,
-            )
-        )
+
+    with ProcessPoolExecutor(
+        max_workers=os.cpu_count(),
+        initializer=_init,
+        initargs=(candidates, destination_weights, existing_charger_locations, walking_network),
+    ) as pool:
+        results = list(pool.map(_run, runs))
 
     out_path = ROOT / "other data" / "scenario_results.csv"
     with out_path.open("w", newline="", encoding="utf-8") as f:

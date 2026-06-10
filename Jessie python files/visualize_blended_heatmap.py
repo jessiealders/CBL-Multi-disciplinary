@@ -60,7 +60,7 @@ sc = ax.scatter(
 )
 
 cbar = fig.colorbar(sc, ax=ax, fraction=0.03, pad=0.01)
-cbar.set_label("Blended weight (20 % GPX + 80 % EV demand)", fontsize=9)
+cbar.set_label("Selection weight after low-weight penalty", fontsize=9)
 
 ctx.add_basemap(ax, source=ctx.providers.OpenStreetMap.Mapnik, zoom="auto")
 
@@ -70,7 +70,7 @@ ax.set_axis_off()
 fig.text(
     0.01,
     0.01,
-    f"{len(locations)} candidate locations · weight range {w.min():.3f}–{w.max():.3f}",
+    f"{len(locations)} candidate locations · penalized weight range {w.min():.3f}–{w.max():.3f}",
     fontsize=8,
     color="gray",
 )
