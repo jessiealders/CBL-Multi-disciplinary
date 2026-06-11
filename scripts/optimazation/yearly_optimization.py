@@ -200,8 +200,8 @@ def load_ev_adoption_inputs(path: Path) -> dict[int, EvAdoptionInput]:
         required_columns = {
             "year",
             "total_passenger_cars",
-            "logistic_percentage",
-            "logistic_ev_cars_each_year",
+            "combined_percentage",
+            "combined_ev_cars_each_year",
         }
         missing = required_columns - set(reader.fieldnames or [])
         if missing:
@@ -211,12 +211,12 @@ def load_ev_adoption_inputs(path: Path) -> dict[int, EvAdoptionInput]:
 
         for row in reader:
             year = int(row["year"])
-            forecast_ev_cars = int(round(float(row["logistic_ev_cars_each_year"])))
+            forecast_ev_cars = int(round(float(row["combined_ev_cars_each_year"])))
             input_ev_arrivals = int(round(forecast_ev_cars * DAILY_EV_ARRIVAL_SHARE))
             ev_adoption_inputs[year] = EvAdoptionInput(
                 year=year,
                 total_passenger_cars=int(round(float(row["total_passenger_cars"]))),
-                ev_adoption_percentage=float(row["logistic_percentage"]),
+                ev_adoption_percentage=float(row["combined_percentage"]),
                 forecast_ev_cars=forecast_ev_cars,
                 input_ev_arrivals=input_ev_arrivals,
             )
