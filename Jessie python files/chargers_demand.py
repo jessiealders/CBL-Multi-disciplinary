@@ -14,7 +14,7 @@ def p(rel_windows_path: str) -> Path:
     return ROOT.joinpath(*rel_windows_path.split("\\"))
 
 population_data = pd.read_csv(
-    ROOT / "other data" / "lili_populationdesnity_districts.csv"
+    ROOT / "processed data" / "lili_populationdesnity_districts.csv"
 )[['buurtnaam', 'gemeentenaam', 'omgevingsadressendichtheid']]
 ehv_population_data = population_data[population_data['gemeentenaam'] == 'Eindhoven']
 od_matrix = pd.read_csv(
@@ -72,10 +72,6 @@ summed_chargers = total_sums.merge(
     on="buurtnaam",
     how="left"
 )
-
-# Amount of trips from... vs chargers
-# Amount ot trips to... vs chargers
-# Total trips... vs chargers
 
 # fig, ax = plt.subplots(1,3, figsize=[15,4])
 # ax[0].scatter(x=origin_chargers['origins'],y=origin_chargers['aantal_laadpalen'])
