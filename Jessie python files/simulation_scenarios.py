@@ -18,39 +18,25 @@ if str(ROOT) not in sys.path:
 from scripts.shared.walking_network import WalkingNetwork
 
 from simulation import (
+    BASE_ARRIVALS_PER_HOUR,
     CANDIDATE_LOCATIONS_PATH,
     EV_DEMAND_HEATMAP_PATH,
     EXISTING_CHARGERS_PATH,
     HEATMAP_DENSITY_PATH,
     OUTPUT_DIR,
     WALKING_NETWORK_PATH,
+    build_simulation_config,
+    generate_arrival_times,
     load_blended_heatmap_weights,
     load_candidate_locations,
     load_existing_charger_locations,
     run_simulation,
+    scale_profile_to_total,
 )
 
 
-# -------------------------
-# Arrival generation
-# -------------------------
+USE_WALKING_NETWORK_DISTANCE = False
 
-
-def generate_arrival_times(rng: random.Random, arrivals_per_hour: list[int]) -> list[float]:
-    """Return arrival times in minutes in [0, 1440).
-
-    For each hour, generate N arrivals uniformly at random inside that hour.
-    """
-    if len(arrivals_per_hour) != 24:
-        raise ValueError("arrivals_per_hour must have length 24")
-
-    times: list[float] = []
-    for h, n in enumerate(arrivals_per_hour):
-        start = h * 60
-        for _ in range(int(n)):
-            times.append(start + rng.random() * 60)
-    times.sort()
-    return times
 
 ######################
 # One-run simulation
@@ -66,6 +52,7 @@ class RunConfig:
     max_charge_time: int = 120
     walking_threshold_m: float = 300.0
     walking_speed_m_per_min: float = 83.3  # 5 km/h
+    distance_mode: str = "euclidean"
     write_events: bool = False
 
 
@@ -80,23 +67,21 @@ def run_one_day(
     rng.seed(cfg.seed)
     arrival_times = generate_arrival_times(rng, cfg.arrivals_per_hour)
 
-    events_dir = ROOT / "other data" / "scenario_events"
+    events_dir = ROOT / "output" /"scenarios"/ "scenario_events"
     events_dir.mkdir(parents=True, exist_ok=True)
-    config = {
-        "description": cfg.scenario,
-        "charger_strategy": "random",
-        "num_cars": len(arrival_times),
-        "num_chargers": cfg.num_chargers,
-        "arrival_times": arrival_times,
-        "simulation_time": 24 * 60,
-        "min_charge_time": cfg.min_charge_time,
-        "max_charge_time": cfg.max_charge_time,
-        "walking_threshold_m": cfg.walking_threshold_m,
-        "walking_speed_m_per_min": cfg.walking_speed_m_per_min,
-        "seed": cfg.seed,
-        "verbose": False,
-        "write_events": cfg.write_events,
-    }
+    config = build_simulation_config(
+        description=cfg.scenario,
+        charger_strategy="random",
+        num_chargers=cfg.num_chargers,
+        arrival_times=arrival_times,
+        seed=cfg.seed,
+        min_charge_time=cfg.min_charge_time,
+        max_charge_time=cfg.max_charge_time,
+        walking_threshold_m=cfg.walking_threshold_m,
+        walking_speed_m_per_min=cfg.walking_speed_m_per_min,
+        distance_mode=cfg.distance_mode,
+        write_events=cfg.write_events,
+    )
     result = run_simulation(
         f"{cfg.scenario}_seed{cfg.seed}",
         config,
@@ -113,6 +98,7 @@ def run_one_day(
     return {
         "scenario": cfg.scenario,
         "seed": cfg.seed,
+        "distance_mode": cfg.distance_mode,
         "num_chargers": cfg.num_chargers,
         "total_arrivals": total,
         "charged": result["completed_charging"],
@@ -130,9 +116,6 @@ def run_one_day(
 # # Scenario series
 ###################
 
-def scale_profile(profile: list[int], factor: float) -> list[int]:
-    return [int(round(x * factor)) for x in profile]
-
 _shared = {}
 
 def _init(candidates, weights, existing, network):
@@ -147,6 +130,14 @@ def _run(cfg):
         _shared["existing"], _shared["network"], cfg
     )
 
+
+def selected_distance_mode() -> str:
+    """Return the distance mode used by scenario simulations."""
+    if USE_WALKING_NETWORK_DISTANCE:
+        return "network"
+    return "euclidean"
+
+
 def main() -> None:
     candidates = load_candidate_locations(CANDIDATE_LOCATIONS_PATH)
     existing_charger_locations = load_existing_charger_locations(EXISTING_CHARGERS_PATH)
@@ -156,20 +147,9 @@ def main() -> None:
     walking_network = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
     OUTPUT_DIR.mkdir(exist_ok=True)
 
-    # A simple default "realistic-ish" arrival curve.
-    # We can tune these numbers later
-    # Research concluded 500 cars in Strijp-s per avg
-    base_profile = [
-        5, 5, 5, 5, 5, 10,      # 00-05
-        25, 39, 39, 29,         # 06-09
-        20, 20,                 # 10-11
-        29, 29,                 # 12-13
-        20, 20, 25,             # 14-16
-        44, 44, 34,             # 17-19
-        20, 15, 10, 5,          # 20-23
-    ]
-
     seeds = list(range(10))  # bump to 20/50 for better statistics
+    distance_mode = selected_distance_mode()
+    print(f"Using distance mode: {distance_mode}")
 
     runs: list[RunConfig] = []
 
@@ -180,7 +160,8 @@ def main() -> None:
                 scenario="baseline",
                 seed=seed,
                 num_chargers=4,
-                arrivals_per_hour=base_profile,
+                arrivals_per_hour=BASE_ARRIVALS_PER_HOUR,
+                distance_mode=distance_mode,
                 write_events=False,
             )
         )
@@ -192,7 +173,11 @@ def main() -> None:
                 scenario="more_cars_50pct",
                 seed=seed,
                 num_chargers=4,
-                arrivals_per_hour=scale_profile(base_profile, 1.5),
+                arrivals_per_hour=scale_profile_to_total(
+                    BASE_ARRIVALS_PER_HOUR,
+                    int(round(sum(BASE_ARRIVALS_PER_HOUR) * 1.5)),
+                ),
+                distance_mode=distance_mode,
                 write_events=False,
             )
         )
@@ -205,7 +190,8 @@ def main() -> None:
                     scenario=f"add_chargers_{chargers}",
                     seed=seed,
                     num_chargers=chargers,
-                    arrivals_per_hour=base_profile,
+                    arrivals_per_hour=BASE_ARRIVALS_PER_HOUR,
+                    distance_mode=distance_mode,
                     write_events=False,
                 )
             )
@@ -226,7 +212,11 @@ def main() -> None:
                         scenario=f"scale_both_c{chargers}_m{mult_label}",
                         seed=seed,
                         num_chargers=chargers,
-                        arrivals_per_hour=scale_profile(base_profile, mult),
+                        arrivals_per_hour=scale_profile_to_total(
+                            BASE_ARRIVALS_PER_HOUR,
+                            int(round(sum(BASE_ARRIVALS_PER_HOUR) * mult)),
+                        ),
+                        distance_mode=distance_mode,
                         write_events=False,
                     )
                 )
@@ -240,7 +230,7 @@ def main() -> None:
     ) as pool:
         results = list(pool.map(_run, runs))
 
-    out_path = ROOT / "other data" / "scenario_results.csv"
+    out_path = ROOT  / "output" /"scenarios"/ "scenario_results.csv"
     with out_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
         writer.writeheader()
@@ -264,6 +254,7 @@ def main() -> None:
             {
                 "scenario": scenario,
                 "num_runs": len(rows),
+                "distance_mode": rows[0]["distance_mode"],
                 "num_chargers": mean(r["num_chargers"] for r in rows),
                 "total_arrivals": mean(r["total_arrivals"] for r in rows),
                 "charged": mean(r["charged"] for r in rows),
@@ -276,7 +267,7 @@ def main() -> None:
             }
         )
 
-    avg_out_path = ROOT / "other data" / "scenario_results_avg.csv"
+    avg_out_path = ROOT  / "output" /"scenarios"/"scenario_results_avg.csv"
 
     with avg_out_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(

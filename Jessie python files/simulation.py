@@ -30,34 +30,140 @@ EXISTING_CHARGERS_PATH = (
 HEATMAP_DENSITY_PATH = ROOT / "processed data" / "gpx_heatmap_density.npz"
 EV_DEMAND_HEATMAP_PATH = ROOT / "processed data" / "heatmap4_density.npz"
 WALKING_NETWORK_PATH = ROOT / "processed data" / "spatial" / "walking_traces.geojson"
-OUTPUT_DIR = ROOT / "processed data" / "simulation"
+OUTPUT_DIR = ROOT / "output" / "baseline"
 
 RD_TO_WGS84 = Transformer.from_crs("EPSG:28992", "EPSG:4326", always_xy=True)
 RD_TO_WEB_MERCATOR = Transformer.from_crs("EPSG:28992", "EPSG:3857", always_xy=True)
 
-FIXED_EXISTING_FIDS = {1, 7, 17, 19}
+FIXED_EXISTING_FIDS = {308440, 308702, 307904, 307905, 308108}
+BASELINE_EV_ARRIVALS = 136
+DEFAULT_SIMULATION_TIME = 24 * 60
+DEFAULT_MIN_CHARGE_TIME = 45
+DEFAULT_MAX_CHARGE_TIME = 120
+DEFAULT_MAX_WAIT_TIME = 5
+DEFAULT_WALKING_THRESHOLD_M = 300.0
+DEFAULT_WALKING_SPEED_M_PER_MIN = 83.3
+DEFAULT_CHARGER_CONNECTORS = 2
+USE_WALKING_NETWORK_DISTANCE = True
+
+BASE_ARRIVALS_PER_HOUR = [
+    5, 5, 5, 5, 5, 10,      # 00-05
+    25, 39, 39, 29,         # 06-09
+    20, 20,                 # 10-11
+    29, 29,                 # 12-13
+    20, 20, 25,             # 14-16
+    44, 44, 34,             # 17-19
+    20, 15, 10, 5,          # 20-23
+]
 
 
+def selected_distance_mode() -> str:
+    """Return the distance mode used by this simulation run."""
+    if USE_WALKING_NETWORK_DISTANCE:
+        return "network"
+    return "euclidean"
+
+
+def generate_arrival_times(rng: random.Random, arrivals_per_hour: list[int]) -> list[float]:
+    """Return arrival times in minutes in [0, 1440)."""
+    if len(arrivals_per_hour) != 24:
+        raise ValueError("arrivals_per_hour must have length 24")
+
+    times: list[float] = []
+    for h, n in enumerate(arrivals_per_hour):
+        start = h * 60
+        for _ in range(int(n)):
+            times.append(start + rng.random() * 60)
+    times.sort()
+    return times
+
+
+def scale_profile_to_total(profile: list[int], total_arrivals: int) -> list[int]:
+    """Scale a 24-hour arrival profile to one total number of EVs."""
+    if len(profile) != 24:
+        raise ValueError("profile must have length 24")
+    if total_arrivals < 0:
+        raise ValueError("total_arrivals must be non-negative")
+
+    profile_total = sum(profile)
+    if profile_total <= 0:
+        return [0 for _ in profile]
+
+    raw = [value * total_arrivals / profile_total for value in profile]
+    scaled = [int(value) for value in raw]
+    remainder = total_arrivals - sum(scaled)
+    order = sorted(
+        range(len(raw)),
+        key=lambda index: raw[index] - scaled[index],
+        reverse=True,
+    )
+    for index in order[:remainder]:
+        scaled[index] += 1
+    return scaled
+
+
+def build_simulation_config(
+    description: str,
+    charger_strategy: str,
+    num_chargers: int,
+    arrival_times: list[float],
+    seed: int,
+    min_charge_time: int = DEFAULT_MIN_CHARGE_TIME,
+    max_charge_time: int = DEFAULT_MAX_CHARGE_TIME,
+    walking_threshold_m: float = DEFAULT_WALKING_THRESHOLD_M,
+    walking_speed_m_per_min: float = DEFAULT_WALKING_SPEED_M_PER_MIN,
+    fixed_charger_fids: str | None = None,
+    charger_connectors: int = DEFAULT_CHARGER_CONNECTORS,
+    simulation_time: int = DEFAULT_SIMULATION_TIME,
+    max_wait_time: int = DEFAULT_MAX_WAIT_TIME,
+    distance_mode: str | None = None,
+    verbose: bool = False,
+    write_events: bool = False,
+) -> dict:
+    config = {
+        "description": description,
+        "charger_strategy": charger_strategy,
+        "num_cars": len(arrival_times),
+        "num_chargers": num_chargers,
+        "arrival_times": arrival_times,
+        "simulation_time": simulation_time,
+        "min_charge_time": min_charge_time,
+        "max_charge_time": max_charge_time,
+        "max_wait_time": max_wait_time,
+        "walking_threshold_m": walking_threshold_m,
+        "walking_speed_m_per_min": walking_speed_m_per_min,
+        "charger_connectors": charger_connectors,
+        "distance_mode": distance_mode or selected_distance_mode(),
+        "seed": seed,
+        "verbose": verbose,
+        "write_events": write_events,
+    }
+    if fixed_charger_fids is not None:
+        config["fixed_charger_fids"] = fixed_charger_fids
+    return config
+
+# Quick run as a small example
 SCENARIOS = {
     "current_situation": {
         "description": "Current charging points in Strijp-S.",
         "charger_strategy": "existing",
-        "num_cars": 40,
+        "num_cars": BASELINE_EV_ARRIVALS,
         "num_chargers": 5,
-        "simulation_time": 200,
-        "min_charge_time": 1,
-        "max_charge_time": 30,
-        "max_wait_time": 5,
-        "walking_threshold_m": 300,
+        "simulation_time": DEFAULT_SIMULATION_TIME,
+        "min_charge_time": DEFAULT_MIN_CHARGE_TIME,
+        "max_charge_time": DEFAULT_MAX_CHARGE_TIME,
+        "max_wait_time": DEFAULT_MAX_WAIT_TIME,
+        "walking_threshold_m": DEFAULT_WALKING_THRESHOLD_M,
+        "walking_speed_m_per_min": DEFAULT_WALKING_SPEED_M_PER_MIN,
+        "charger_connectors": DEFAULT_CHARGER_CONNECTORS,
+        "distance_mode": selected_distance_mode(),
         "seed": 10,
     },
 }
 
-
 # -----------------------------
 # Coordinate helpers
 # -----------------------------
-
 
 def rd_to_wgs84(x, y):
     """Convert Dutch RD coordinates (EPSG:28992) to latitude/longitude."""
@@ -81,6 +187,7 @@ class CandidateLocation:
     y: float
     max_area: float
     postcode: str | None = None
+    connectors: int | None = None
 
     def lat_lon(self):
         return rd_to_wgs84(self.x, self.y)
@@ -121,6 +228,7 @@ def load_existing_charger_locations(path: Path) -> list[CandidateLocation]:
             x = float(row["X_coordinate"])
             y = float(row["Y_coordinate"])
             charger_id = row.get("charger_id") or index
+            connectors = max(1, int(round(float(row.get("connectors") or 1))))
             locations.append(
                 CandidateLocation(
                     fid=int(float(charger_id)),
@@ -129,6 +237,7 @@ def load_existing_charger_locations(path: Path) -> list[CandidateLocation]:
                     y=y,
                     max_area=0.0,
                     postcode=(row.get("most_common_postcode") or "").strip() or None,
+                    connectors=connectors,
                 )
             )
     return locations
@@ -271,11 +380,22 @@ class Source:
             loc = None
             if self.chosen_charger_locations:
                 loc = self.chosen_charger_locations[charger_id]
-            self.chargers.append(Charger(self.env, charger_id, location=loc))
+            charger_connectors = int(
+                getattr(loc, "connectors", None)
+                or self.config.get("charger_connectors", 2)
+            )
+            self.chargers.append(
+                Charger(
+                    self.env,
+                    charger_id,
+                    connectors=charger_connectors,
+                    location=loc,
+                )
+            )
 
         # Generate cars, start the charging process and add them to the list of cars
         for car_id in range(self.number_cars):
-            car = Car(self)
+            car = Car(self, car_id)
             self.env.process(car.charge(self.env, f"Car {car_id}"))
             self.cars.append(car)
 
@@ -287,16 +407,17 @@ class Source:
 class Charger(simpy.Resource):
     """
     Charger: Simpy Resource: provides a service (charging), can be occupied by cars
-    Parameters: environment, charger id, capacity (= 5 because only 1 car can charge at each charger)
+    Parameters: environment, charger id, and number of connectors.
     """
 
     # Initialize the charger
     def __init__(
-        self, env, charger_id, capacity=5, location: CandidateLocation | None = None
+        self, env, charger_id, connectors=2, location: CandidateLocation | None = None
     ):
-        super().__init__(env, capacity)
+        super().__init__(env, capacity=connectors)
         self.charger_id = charger_id
         self.location = location
+        self.connectors = connectors
         # Initialize chargingTime: total time a car charged at this charger
         self.chargingTime = 0
 
@@ -316,15 +437,18 @@ class Car:
     Parameters: source object (for accessing the list of chargers)
     """
 
-    def __init__(self, src: Source):
+    def __init__(self, src: Source, car_id: int | None = None):
         # Change the generation of arrival times and destinations to distributions based on real data
         self.src = src
         # Randomly generate how long it takes to charge
         self.chargeTime = self.src.rng.randint(
             src.config["min_charge_time"], src.config["max_charge_time"]
         )
-        # Randomly choose an arrival time
-        self.arrivalTime = self.src.rng.randint(0, src.config["simulation_time"])
+        arrival_times = src.config.get("arrival_times")
+        if arrival_times is not None and car_id is not None:
+            self.arrivalTime = arrival_times[car_id]
+        else:
+            self.arrivalTime = self.src.rng.randint(0, src.config["simulation_time"])
         # Destination is now a real centroid point (x,y). We sample it from the candidate locations.
         # (Assumption for now: trips start/end within the same candidate set.)
         if not src.candidate_locations:
@@ -474,19 +598,18 @@ class Car:
             # Fallback to old behavior if no locations
             charger_idx = self.src.chargers.index(charger)
             return abs(charger_idx - 0)
-        # if (
-        #     self.src.config.get("distance_mode", "network") == "network"
-        #     and self.src.walking_network
-
-        # ):
-        #     destination_lat, destination_lon = self.destination.lat_lon()
-        #     charger_lat, charger_lon = charger.location.lat_lon()
-        #     return self.src.walking_network.distance_m(
-        #         destination_lat,
-        #         destination_lon,
-        #         charger_lat,
-        #         charger_lon,
-        #     )
+        if (
+            self.src.config.get("distance_mode", "euclidean") == "network"
+            and self.src.walking_network
+        ):
+            destination_lat, destination_lon = self.destination.lat_lon()
+            charger_lat, charger_lon = charger.location.lat_lon()
+            return self.src.walking_network.distance_m(
+                destination_lat,
+                destination_lon,
+                charger_lat,
+                charger_lon,
+            )
         dx = charger.location.x - self.destination.x
         dy = charger.location.y - self.destination.y
         return (dx * dx + dy * dy) ** 0.5
@@ -503,24 +626,25 @@ class Car:
             charger1_idx = self.src.chargers.index(charger1)
             charger2_idx = self.src.chargers.index(charger2)
             return abs(charger1_idx - charger2_idx)
-        # if (
-        #     self.src.config.get("distance_mode", "network") == "network"
-        #     and self.src.walking_network
-        # ):
-        #     charger1_lat, charger1_lon = charger1.location.lat_lon()
-        #     charger2_lat, charger2_lon = charger2.location.lat_lon()
-        #     dist_m = self.src.walking_network.distance_m(
-        #         charger1_lat,
-        #         charger1_lon,
-        #         charger2_lat,
-        #         charger2_lon,
-        #     )
-        #     return dist_m / self.src.config.get("walking_speed_m_per_min", 83.3)
+        if (
+            self.src.config.get("distance_mode", "euclidean") == "network"
+            and self.src.walking_network
+        ):
+            charger1_lat, charger1_lon = charger1.location.lat_lon()
+            charger2_lat, charger2_lon = charger2.location.lat_lon()
+            dist_m = self.src.walking_network.distance_m(
+                charger1_lat,
+                charger1_lon,
+                charger2_lat,
+                charger2_lon,
+            )
+            return dist_m / self.src.config.get(
+                "walking_speed_m_per_min", DEFAULT_WALKING_SPEED_M_PER_MIN
+            )
         dx = charger2.location.x - charger1.location.x
         dy = charger2.location.y - charger1.location.y
         dist_m = (dx * dx + dy * dy) ** 0.5
         return dist_m / self.src.config.get("walking_speed_m_per_min", 83.3)
-
 
 # -----------------------------
 # Charger-location strategies
@@ -721,7 +845,7 @@ def run_simulation(
     total_walkdist = sum(car.walkingDist for car in completed_cars)
     total_waiting = sum(car.waitingTime for car in completed_cars)
     total_utilization = sum(
-        charger.chargingTime / (simulation_time * charger.capacity)
+        charger.chargingTime / (simulation_time * charger.connectors)
         for charger in src.chargers
     )
 
@@ -782,27 +906,51 @@ def main() -> None:
         f"{len(walking_network.network_nodes)} connected nodes"
     )
 
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    baseline_output_dir = ROOT / "output" / "baseline"
+    baseline_output_dir.mkdir(parents=True, exist_ok=True)
 
     results = []
     for scenario_name, config in SCENARIOS.items():
+        print(f"Using distance mode: {config['distance_mode']}")
         print(f"Running scenario: {scenario_name}")
         rng = random.Random()
         rng.seed(config["seed"])
+        arrivals_per_hour = scale_profile_to_total(
+            BASE_ARRIVALS_PER_HOUR,
+            config["num_cars"],
+        )
+        arrival_times = generate_arrival_times(rng, arrivals_per_hour)
+        run_config = build_simulation_config(
+            description=config["description"],
+            charger_strategy=config["charger_strategy"],
+            num_chargers=config["num_chargers"],
+            arrival_times=arrival_times,
+            seed=config["seed"],
+            min_charge_time=config["min_charge_time"],
+            max_charge_time=config["max_charge_time"],
+            walking_threshold_m=config["walking_threshold_m"],
+            walking_speed_m_per_min=config["walking_speed_m_per_min"],
+            charger_connectors=config["charger_connectors"],
+            simulation_time=config["simulation_time"],
+            max_wait_time=config["max_wait_time"],
+            distance_mode=config["distance_mode"],
+            verbose=config.get("verbose", False),
+            write_events=config.get("write_events", False),
+        )
         results.append(
             run_simulation(
                 scenario_name,
-                config,
+                run_config,
                 candidate_locations,
                 destination_weights,
                 existing_charger_locations,
                 walking_network,
-                OUTPUT_DIR,
+                baseline_output_dir,
                 rng=rng,
             )
         )
 
-    summary_path = write_summary(OUTPUT_DIR, results)
+    summary_path = write_summary(baseline_output_dir, results)
     print_summary(results)
     print(f"\nWrote scenario summary: {summary_path}")
 
