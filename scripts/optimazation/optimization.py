@@ -19,8 +19,8 @@ DistanceFn = Callable[[LocationLike, LocationLike], float]
 class OptimizationSettings:
     """KPI thresholds and planning assumptions for charger placement."""
 
-    # Walking KPI: walking_threshold_m + min_coverage_rate means enough demand
-    # must be close to a charger, for example 80% of weighted demand within 300 m.
+    # Walking coverage note only, not an active feasibility KPI:
+    # min_coverage_rate = 0.80 and walking_threshold_m = 300 m.
     walking_threshold_m: float = 300.0
     min_coverage_rate: float = 0.80
     max_unmet_demand_rate: float = 0.10
@@ -176,21 +176,24 @@ def evaluate_locations(
     unmet_rate = unmet_demand / total_demand if total_demand > 0 else 0.0
     utilization = served_demand / raw_capacity if raw_capacity > 0 else 0.0
     avg_walking_dist = weighted_distance / weight_total if weight_total > 0 else 0.0
+    coverage_rate = covered_weight / weight_total if weight_total > 0 else 0.0
 
     return OptimizationKpis(
-        coverage_rate=covered_weight / weight_total if weight_total > 0 else 0.0,
+        coverage_rate=coverage_rate,
         avg_walking_dist_m=avg_walking_dist,
         unmet_demand_rate=unmet_rate,
         charger_utilization=utilization,
-        objective_value=weighted_distance + settings.unmet_demand_penalty_m * unmet_rate,
+        objective_value=(
+            weighted_distance
+            + settings.unmet_demand_penalty_m * unmet_rate
+        ),
     )
 
 
 def is_feasible(kpis: OptimizationKpis, settings: OptimizationSettings) -> bool:
     """Check if a charger layout passes the KPI limits."""
     return (
-        kpis.coverage_rate >= settings.min_coverage_rate
-        and kpis.unmet_demand_rate <= settings.max_unmet_demand_rate
+        kpis.unmet_demand_rate <= settings.max_unmet_demand_rate
         and kpis.charger_utilization <= settings.max_charger_utilization
     )
 
@@ -362,9 +365,10 @@ def find_minimum_feasible_chargers(
     raise ValueError(
         f"No feasible charger layout found between {min_chargers} and "
         f"{upper_bound} new chargers. Last KPI values: "
-        f"coverage_rate={best_result.kpis.coverage_rate:.2f}, "
-        f"unmet_demand_rate={best_result.kpis.unmet_demand_rate:.2f}, "
-        f"charger_utilization={best_result.kpis.charger_utilization:.2f}."
+        f"unmet_demand_rate={best_result.kpis.unmet_demand_rate * 100:.2f}% "
+        f"(limit {settings.max_unmet_demand_rate * 100:.2f}%), "
+        f"charger_utilization={best_result.kpis.charger_utilization:.2f} "
+        f"(limit {settings.max_charger_utilization:.2f})."
     )
 
 

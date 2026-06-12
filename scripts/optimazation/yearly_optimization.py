@@ -54,7 +54,6 @@ DEFAULT_WALKING_SPEED_M_PER_MIN = simulation.DEFAULT_WALKING_SPEED_M_PER_MIN
 EV_DEMAND_HEATMAP_PATH = simulation.EV_DEMAND_HEATMAP_PATH
 EXISTING_CHARGERS_PATH = simulation.EXISTING_CHARGERS_PATH
 HEATMAP_DENSITY_PATH = simulation.HEATMAP_DENSITY_PATH
-OUTPUT_DIR = simulation.OUTPUT_DIR
 WALKING_NETWORK_PATH = simulation.WALKING_NETWORK_PATH
 build_simulation_config = simulation.build_simulation_config
 generate_arrival_times = simulation.generate_arrival_times
@@ -69,6 +68,7 @@ select_fixed_locations = simulation.select_fixed_locations
 EV_ADOPTION_FORECAST_PATH = (
     ROOT / "processed data" / "ev adoption" / "ev_adoption_forecast.csv"
 )
+OPTIMIZATION_OUTPUT_DIR = ROOT / "output" / "optimization"
 DAILY_EV_ARRIVAL_SHARE = 1.0
 NUMBER_OF_RUNS = 10
 LOCAL_SEARCH_ROUNDS = 3
@@ -253,6 +253,9 @@ def average_yearly_results(results: list[dict[str, Any]]) -> list[dict[str, Any]
                     mean(r["minimum_chargers"] for r in rows)
                 ),
                 "selected_locations": selected_locations,
+                "average_waiting_time": round2(mean(
+                    r["average_waiting_time"] for r in rows
+                )),
                 "average_served_rate": round2(mean(r["served_rate"] for r in rows)),
                 "average_unmet_rate": round2(mean(r["unmet_rate"] for r in rows)),
                 "average_served_demand": round2(mean(r["served_demand"] for r in rows)),
@@ -262,6 +265,15 @@ def average_yearly_results(results: list[dict[str, Any]]) -> list[dict[str, Any]
                 )),
                 "average_utilization": round2(
                     mean(r["average_utilization"] for r in rows)
+                ),
+                "average_max_utilization": round2(
+                    mean(r["max_utilization"] for r in rows)
+                ),
+                "average_walking_coverage_rate_info": round2(
+                    mean(r["walking_coverage_rate_info"] for r in rows)
+                ),
+                "average_optimization_unmet_rate_info": round2(
+                    mean(r["optimization_unmet_rate_info"] for r in rows)
                 ),
                 "simulation_kpis_feasible": all(
                     r["simulation_kpis_feasible"] for r in rows
@@ -335,7 +347,7 @@ def run_one_optimization_year(
             else 0
         )
 
-        events_dir = ROOT / "output" / "optimization" / "optimization_events"
+        events_dir = OPTIMIZATION_OUTPUT_DIR / "optimization_events"
         events_dir.mkdir(parents=True, exist_ok=True)
         sim_config = build_simulation_config(
             description=f"optimized_{cfg.year}",
@@ -363,10 +375,13 @@ def run_one_optimization_year(
             events_dir,
             rng=sim_rng,
         )
+        total_arrivals = len(arrival_times)
         served_demand = sim_result["completed_charging"]
         unmet_demand = sim_result["gave_up"]
-        unmet_rate = round2(percent_rate(unmet_demand, cfg.input_ev_arrivals))
+        served_rate = round2(percent_rate(served_demand, total_arrivals))
+        unmet_rate = round2(percent_rate(unmet_demand, total_arrivals))
         utilization = round2(sim_result["avg_charger_utilization"])
+        maximum_utilization = round2(sim_result["max_charger_utilization"])
         sim_feasible = simulation_kpis_feasible(unmet_rate, utilization, settings)
 
         if sim_feasible:
@@ -379,18 +394,18 @@ def run_one_optimization_year(
                 "minimum_chargers": sim_result["num_chargers"],
                 "selected_locations": selected_fids,
                 "served_demand": served_demand,
-                "served_rate": round2(
-                    percent_rate(served_demand, cfg.input_ev_arrivals)
-                ),
+                "served_rate": served_rate,
                 "unmet_demand": unmet_demand,
                 "unmet_rate": unmet_rate,
+                "average_waiting_time": round2(sim_result["avg_waiting_time"]),
                 "average_walking_distance": round2(sim_result["avg_walking_dist_m"]),
                 "average_utilization": utilization,
-                "optimization_coverage_rate": round2(
-                    optimization_result.kpis.coverage_rate
+                "max_utilization": maximum_utilization,
+                "walking_coverage_rate_info": round2(
+                    optimization_result.kpis.coverage_rate * 100
                 ),
-                "optimization_unmet_demand_rate": round2(
-                    optimization_result.kpis.unmet_demand_rate
+                "optimization_unmet_rate_info": round2(
+                    optimization_result.kpis.unmet_demand_rate * 100
                 ),
                 "simulation_kpis_feasible": sim_feasible,
                 "optimization_feasible": optimization_result.feasible,
@@ -505,7 +520,7 @@ def _worker_run_seed(seed: int) -> list[dict[str, Any]]:
 
 def main() -> None:
     """Run the full yearly charger optimization workflow."""
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    OPTIMIZATION_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     print(f"Using distance mode: {selected_distance_mode()}")
 
     seeds = list(range(NUMBER_OF_RUNS))
@@ -527,12 +542,12 @@ def main() -> None:
             results.extend(seed_results)
             print(f"  Seed {seed} done ({len(seed_results)} years)")
 
-    out_path = ROOT / "output" / "optimization" / "optimization_results.csv"
+    out_path = OPTIMIZATION_OUTPUT_DIR / "optimization_results.csv"
     write_csv(out_path, results)
     print(f"Wrote {len(results)} optimization runs to: {out_path}")
 
     averaged_results = average_yearly_results(results)
-    avg_out_path = ROOT / "output" / "optimization" / "optimization_results_avg.csv"
+    avg_out_path = OPTIMIZATION_OUTPUT_DIR / "optimization_results_avg.csv"
     write_csv(avg_out_path, averaged_results)
     print(
         f"Wrote {len(averaged_results)} averaged optimization years to: "

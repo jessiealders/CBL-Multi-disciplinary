@@ -1,0 +1,744 @@
+car,charge_time,charger_fid,charger_id,destination_fid,from_charger_id,kind,last_charger_id,msg,t,to_charger_id,waited,walking_dist_m
+Car 176,,,,77,,arrived,,arrived,13.0,,,
+Car 176,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),13.0,,0.0,
+Car 62,,,,37,,arrived,,arrived,21.0,,,
+Car 62,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),21.0,,0.0,
+Car 162,,,,90,,arrived,,arrived,24.0,,,
+Car 162,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),24.0,,0.0,
+Car 40,,,,27,,arrived,,arrived,26.0,,,
+Car 40,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),26.0,,0.0,
+Car 3,,,,72,,arrived,,arrived,65.0,,,
+Car 3,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),65.0,,0.0,
+Car 5,,,,73,,arrived,,arrived,66.0,,,
+Car 5,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),66.0,,0.0,
+Car 104,,,,37,,arrived,,arrived,72.0,,,
+Car 175,,,,2,,arrived,,arrived,77.0,,,
+Car 104,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",77.0,1,,
+Car 175,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),77.0,,0.0,
+Car 104,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),79.33625344304474,,5.0,
+Car 27,,,,50,,arrived,,arrived,81.0,,,
+Car 27,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),81.0,,0.0,
+Car 176,71.0,60,6,,,done,,done charging,84.0,,,43.698525833242314
+Car 35,,,,68,,arrived,,arrived,102.0,,,
+Car 35,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",107.0,1,,
+Car 35,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),109.22134419256946,,5.0,
+Car 124,,,,8,,arrived,,arrived,117.0,,,
+Car 33,,,,15,,arrived,,arrived,120.0,,,
+Car 30,,,,56,,arrived,,arrived,122.0,,,
+Car 124,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",122.0,6,,
+Car 125,,,,45,,arrived,,arrived,124.0,,,
+Car 62,103.0,73,5,,,done,,done charging,124.0,,,52.18342097829892
+Car 125,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),124.0,,0.0,
+Car 33,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 3 (fid=307905)",125.0,3,,
+Car 27,46.0,60,6,,,done,,done charging,127.0,,,96.01273230670698
+Car 30,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",127.0,1,,
+Car 124,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),127.0,,7.729918595029346,
+Car 33,,307905,3,,,start_charge,,starting to charge at Charger 3 (fid=307905),127.8588498683722,,5.0,
+Car 162,107.0,308108,4,,,done,,done charging,131.0,,,122.78010549354106
+Car 30,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",134.22134419256946,7,,
+Car 30,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),134.83546546492425,,10.0,
+Car 96,,,,51,,arrived,,arrived,144.0,,,
+Car 104,66.0,308702,1,,,done,,done charging,145.33625344304474,,,143.13448230947176
+Car 161,,,,47,,arrived,,arrived,146.0,,,
+Car 40,120.0,308440,0,,,done,,done charging,146.0,,,55.628869744032556
+Car 161,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),146.0,,0.0,
+Car 96,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 4 (fid=308108)",149.0,4,,
+Car 11,,,,37,,arrived,,arrived,151.0,,,
+Car 11,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),151.0,,0.0,
+Car 96,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),152.0068070186066,,5.0,
+Car 3,92.0,308440,0,,,done,,done charging,157.0,,,50.814887838148124
+Car 175,90.0,308108,4,,,done,,done charging,167.0,,,50.608860973177485
+Car 0,,,,54,,arrived,,arrived,171.0,,,
+Car 0,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),171.0,,0.0,
+Car 35,67.0,308702,1,,,done,,done charging,176.22134419256946,,,166.95224103016787
+Car 77,,,,115,,arrived,,arrived,177.0,,,
+Car 77,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),177.0,,0.0,
+Car 5,113.0,73,5,,,done,,done charging,179.0,,,0.0
+Car 125,59.0,60,6,,,done,,done charging,183.0,,,49.278434593652825
+Car 30,49.0,30,7,,,done,,done charging,183.83546546492425,,,164.5201457603465
+Car 126,,,,16,,arrived,,arrived,185.0,,,
+Car 126,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),185.0,,0.0,
+Car 32,,,,50,,arrived,,arrived,189.0,,,
+Car 32,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),189.0,,0.0,
+Car 29,,,,67,,arrived,,arrived,205.0,,,
+Car 29,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),205.0,,0.0,
+Car 88,,,,39,,arrived,,arrived,207.0,,,
+Car 89,,,,73,,arrived,,arrived,208.0,,,
+Car 89,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),208.0,,0.0,
+Car 11,61.0,73,5,,,done,,done charging,212.0,,,52.18342097829892
+Car 88,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 4 (fid=308108)",212.0,4,,
+Car 88,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),215.0068070186066,,5.0,
+Car 136,,,,29,,arrived,,arrived,219.0,,,
+Car 0,49.0,308702,1,,,done,,done charging,220.0,,,118.85907491646913
+Car 136,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 3 (fid=307905)",224.0,3,,
+Car 96,78.0,308108,4,,,done,,done charging,230.0068070186066,,,163.4278730939046
+Car 145,,,,21,,arrived,,arrived,231.0,,,
+Car 136,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",231.8588498683722,2,,
+Car 136,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),231.89201305491352,,10.0,
+Car 161,86.0,30,7,,,done,,done charging,232.0,,,79.60474127214951
+Car 77,56.0,308440,0,,,done,,done charging,233.0,,,14.863415388104174
+Car 145,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),233.0,,2.0,
+Car 28,,,,65,,arrived,,arrived,234.0,,,
+Car 28,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),234.0,,0.0,
+Car 130,,,,31,,arrived,,arrived,235.0,,,
+Car 124,109.0,60,6,,,done,,done charging,236.0,,,218.4407527225607
+Car 130,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",240.0,1,,
+Car 130,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),242.22134419256946,,5.0,
+Car 151,,,,22,,arrived,,arrived,244.0,,,
+Car 34,,,,31,,arrived,,arrived,245.0,,,
+Car 34,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),245.0,,0.0,
+Car 33,118.0,307905,3,,,done,,done charging,245.8588498683722,,,172.70746971688578
+Car 151,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",249.0,7,,
+Car 151,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),249.6141212723548,,5.0,
+Car 16,,,,43,,arrived,,arrived,257.0,,,
+Car 16,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 1 (fid=308702)",262.0,1,,
+Car 16,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 5 (fid=73)",267.6141212723548,5,,
+Car 32,82.0,60,6,,,done,,done charging,271.0,,,96.01273230670698
+Car 16,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 0 (fid=308440)",274.9503747153995,0,,
+Car 136,46.0,307904,2,,,done,,done charging,277.8920130549135,,,181.63614584382097
+Car 16,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 6 (fid=60)",283.21645293444055,6,,
+Car 28,52.0,73,5,,,done,,done charging,286.0,,,113.8475167274432
+Car 16,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),286.47614498172675,,20.0,
+Car 90,,,,84,,arrived,,arrived,290.0,,,
+Car 90,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),290.0,,0.0,
+Car 88,80.0,308108,4,,,done,,done charging,295.0068070186066,,,228.03836079481695
+Car 89,88.0,73,5,,,done,,done charging,296.0,,,0.0
+Car 130,54.0,308702,1,,,done,,done charging,296.22134419256946,,,177.2384133448334
+Car 126,113.0,308440,0,,,done,,done charging,298.0,,,120.70032154058093
+Car 93,,,,9,,arrived,,arrived,308.0,,,
+Car 93,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),308.0,,0.0,
+Car 134,,,,21,,arrived,,arrived,314.0,,,
+Car 140,,,,8,,arrived,,arrived,314.0,,,
+Car 134,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),314.0,,0.0,
+Car 140,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),314.0,,0.0,
+Car 61,,,,76,,arrived,,arrived,316.0,,,
+Car 61,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),316.0,,0.0,
+Car 29,114.0,308702,1,,,done,,done charging,319.0,,,55.10871020991591
+Car 8,,,,73,,arrived,,arrived,322.0,,,
+Car 8,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",327.0,6,,
+Car 159,,,,37,,arrived,,arrived,328.0,,,
+Car 166,,,,21,,arrived,,arrived,328.0,,,
+Car 166,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),328.0,,0.0,
+Car 8,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),329.27008140497065,,5.0,
+Car 159,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",333.0,1,,
+Car 159,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),335.3362534430447,,5.0,
+Car 25,,,,69,,arrived,,arrived,336.0,,,
+Car 25,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",341.0,1,,
+Car 25,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),343.22134419256946,,5.0,
+Car 145,113.0,308440,0,,,done,,done charging,346.0,,,21.557393650438307
+Car 34,101.0,30,7,,,done,,done charging,346.0,,,12.168342532958441
+Car 174,,,,52,,arrived,,arrived,358.0,,,
+Car 56,,,,60,,arrived,,arrived,360.0,,,
+Car 66,,,,8,,arrived,,arrived,361.0,,,
+Car 174,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 2 (fid=307904)",363.0,2,,
+Car 56,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 3 (fid=307905)",365.0,3,,
+Car 66,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",366.0,6,,
+Car 56,,307905,3,,,start_charge,,starting to charge at Charger 3 (fid=307905),367.224325873735,,5.0,
+Car 151,118.0,30,7,,,done,,done charging,367.6141212723548,,,97.88713309215808
+Car 174,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",369.67826482304116,3,,
+Car 66,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 1 (fid=308702)",373.27008140497065,1,,
+Car 174,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 6 (fid=60)",374.71142800958245,6,,
+Car 13,,,,31,,arrived,,arrived,376.0,,,
+Car 140,62.0,73,5,,,done,,done charging,376.0,,,46.809697563664486
+Car 13,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),376.0,,0.0,
+Car 12,,,,55,,arrived,,arrived,380.0,,,
+Car 174,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 0 (fid=308440)",381.93575388331743,0,,
+Car 90,92.0,308108,4,,,done,,done charging,382.0,,,163.9344186953887
+Car 66,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",382.09641989362507,7,,
+Car 66,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),382.71054116597986,,15.0,
+Car 8,54.0,60,6,,,done,,done charging,383.27008140497065,,,189.09778103405594
+Car 12,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",385.0,1,,
+Car 174,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 5 (fid=73)",390.1954459306036,5,,
+Car 12,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",392.22134419256946,7,,
+Car 12,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),392.83546546492425,,10.0,
+Car 174,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),393.4615241496447,,25.0,
+Car 55,,,,74,,arrived,,arrived,394.0,,,
+Car 144,,,,78,,arrived,,arrived,395.0,,,
+Car 55,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",399.0,3,,
+Car 144,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",400.0,6,,
+Car 144,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),402.27008140497065,,5.0,
+Car 16,117.0,60,6,,,done,,done charging,403.47614498172675,,,405.044426502846
+Car 55,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 4 (fid=308108)",404.0331631865413,4,,
+Car 55,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),405.74028840340156,,10.0,
+Car 97,,,,77,,arrived,,arrived,406.0,,,
+Car 97,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),406.0,,0.0,
+Car 134,93.0,308440,0,,,done,,done charging,407.0,,,21.557393650438307
+Car 25,64.0,308702,1,,,done,,done charging,407.22134419256946,,,165.61969207792842
+Car 61,94.0,308108,4,,,done,,done charging,410.0,,,110.31849156420415
+Car 179,,,,19,,arrived,,arrived,414.0,,,
+Car 179,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),414.0,,0.0,
+Car 166,91.0,307904,2,,,done,,done charging,419.0,,,95.37986597811783
+Car 93,113.0,73,5,,,done,,done charging,421.0,,,94.80590796467769
+Car 56,58.0,307905,3,,,done,,done charging,425.224325873735,,,185.28634528212194
+Car 13,64.0,308440,0,,,done,,done charging,440.0,,,65.10485574823473
+Car 12,48.0,30,7,,,done,,done charging,440.83546546492425,,,164.6094204624996
+Car 78,,,,37,,arrived,,arrived,442.0,,,
+Car 78,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),442.0,,0.0,
+Car 108,,,,71,,arrived,,arrived,445.0,,,
+Car 141,,,,61,,arrived,,arrived,445.0,,,
+Car 108,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),445.0,,0.0,
+Car 141,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",450.0,5,,
+Car 159,118.0,308702,1,,,done,,done charging,453.3362534430447,,,143.13448230947176
+Car 55,49.0,308108,4,,,done,,done charging,454.74028840340156,,,111.55191961143598
+Car 15,,,,28,,arrived,,arrived,456.0,,,
+Car 15,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),456.0,,0.0,
+Car 65,,,,1,,arrived,,arrived,457.0,,,
+Car 65,,307905,3,,,start_charge,,starting to charge at Charger 3 (fid=307905),457.0,,0.0,
+Car 141,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 3 (fid=307905)",457.27008140497065,3,,
+Car 31,,,,75,,arrived,,arrived,461.0,,,
+Car 80,,,,63,,arrived,,arrived,461.0,,,
+Car 31,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),461.0,,0.0,
+Car 43,,,,29,,arrived,,arrived,463.0,,,
+Car 80,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",466.0,1,,
+Car 141,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",466.3285645982174,2,,
+Car 141,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),466.36172778475867,,15.0,
+Car 66,84.0,30,7,,,done,,done charging,466.71054116597986,,,262.40039007594595
+Car 43,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),466.71054116597986,,3.710541165979862,
+Car 80,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),468.3362534430447,,5.0,
+Car 50,,,,11,,arrived,,arrived,471.0,,,
+Car 50,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",476.0,5,,
+Car 174,83.0,73,5,,,done,,done charging,476.4615241496447,,,355.92187711349203
+Car 23,,,,64,,arrived,,arrived,478.0,,,
+Car 23,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),478.0,,0.0,
+Car 50,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),478.27008140497065,,5.0,
+Car 132,,,,76,,arrived,,arrived,492.0,,,
+Car 158,,,,9,,arrived,,arrived,492.0,,,
+Car 132,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 2 (fid=307904)",497.0,2,,
+Car 158,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",497.0,6,,
+Car 79,,,,15,,arrived,,arrived,500.0,,,
+Car 97,96.0,60,6,,,done,,done charging,502.0,,,43.698525833242314
+Car 78,60.0,73,5,,,done,,done charging,502.0,,,52.18342097829892
+Car 158,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),502.0,,7.729918595029346,
+Car 132,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",503.67826482304116,3,,
+Car 79,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 3 (fid=307905)",505.0,3,,
+Car 144,103.0,60,6,,,done,,done charging,505.27008140497065,,,250.76693807597113
+Car 132,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 6 (fid=60)",508.71142800958245,6,,
+Car 132,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),510.93575388331743,,15.0,
+Car 79,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",512.8588498683722,2,,
+Car 141,48.0,307904,2,,,done,,done charging,514.3617277847586,,,293.7931808755809
+Car 79,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),514.3617277847586,,11.469714729845123,
+Car 170,,,,84,,arrived,,arrived,515.0,,,
+Car 54,,,,11,,arrived,,arrived,518.0,,,
+Car 179,105.0,308440,0,,,done,,done charging,519.0,,,19.357876329814943
+Car 170,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 2 (fid=307904)",520.0,2,,
+Car 54,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",523.0,5,,
+Car 54,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),525.2700814049707,,5.0,
+Car 43,59.0,30,7,,,done,,done charging,525.7105411659799,,,12.865824886131326
+Car 138,,,,52,,arrived,,arrived,526.0,,,
+Car 170,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",526.6782648230412,3,,
+Car 138,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 2 (fid=307904)",531.0,2,,
+Car 170,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 6 (fid=60)",531.7114280095825,6,,
+Car 74,,,,11,,arrived,,arrived,535.0,,,
+Car 80,68.0,308702,1,,,done,,done charging,536.3362534430447,,,207.74268424426072
+Car 108,92.0,308440,0,,,done,,done charging,537.0,,,45.5827752775002
+Car 138,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",537.6782648230412,3,,
+Car 170,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 0 (fid=308440)",538.9357538833175,0,,
+Car 23,62.0,308108,4,,,done,,done charging,540.0,,,103.76990676010192
+Car 74,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",540.0,5,,
+Car 171,,,,84,,arrived,,arrived,541.0,,,
+Car 171,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),541.0,,0.0,
+Car 170,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),542.1954459306037,,20.0,
+Car 138,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 6 (fid=60)",542.7114280095825,6,,
+Car 74,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 0 (fid=308440)",547.2700814049707,0,,
+Car 65,91.0,307905,3,,,done,,done charging,548.0,,,30.92859861038139
+Car 138,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 0 (fid=308440)",549.9357538833175,0,,
+Car 15,94.0,30,7,,,done,,done charging,550.0,,,25.03603972276259
+Car 74,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),550.5361596240117,,10.0,
+Car 24,,,,66,,arrived,,arrived,556.0,,,
+Car 50,79.0,73,5,,,done,,done charging,557.2700814049706,,,109.89012633535583
+Car 24,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),557.2700814049706,,1.2700814049705969,
+Car 31,97.0,308108,4,,,done,,done charging,558.0,,,110.92774990052858
+Car 138,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 5 (fid=73)",558.1954459306037,5,,
+Car 85,,,,74,,arrived,,arrived,561.0,,,
+Car 139,,,,75,,arrived,,arrived,564.0,,,
+Car 139,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),564.0,,0.0,
+Car 85,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",566.0,3,,
+Car 85,,307905,3,,,start_charge,,starting to charge at Charger 3 (fid=307905),566.0331631865413,,5.0,
+Car 138,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",566.4615241496447,1,,
+Car 122,,,,6,,arrived,,arrived,568.0,,,
+Car 138,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),568.7977775926894,,30.0,
+Car 106,,,,6,,arrived,,arrived,569.0,,,
+Car 1,,,,30,,arrived,,arrived,573.0,,,
+Car 122,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",573.0,2,,
+Car 106,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",574.0,2,,
+Car 1,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",578.0,1,,
+Car 122,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 6 (fid=60)",578.0331631865413,6,,
+Car 106,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 6 (fid=60)",579.0331631865413,6,,
+Car 79,65.0,307904,2,,,done,,done charging,579.3617277847586,,,175.44776298945575
+Car 1,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),580.2213441925694,,5.0,
+Car 122,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 0 (fid=308440)",585.2781340672926,0,,
+Car 106,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 0 (fid=308440)",586.2781340672926,0,,
+Car 122,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 5 (fid=73)",593.5378261145788,5,,
+Car 106,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 5 (fid=73)",594.5378261145788,5,,
+Car 132,84.0,60,6,,,done,,done charging,594.9357538833174,,,328.74596872964986
+Car 122,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 4 (fid=308108)",601.8039043336198,4,,
+Car 106,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 4 (fid=308108)",602.8039043336198,4,,
+Car 74,53.0,308440,0,,,done,,done charging,603.5361596240117,,,209.92472464670956
+Car 54,79.0,73,5,,,done,,done charging,604.2700814049707,,,109.89012633535583
+Car 158,105.0,60,6,,,done,,done charging,607.0,,,148.3622944989869
+Car 122,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 1 (fid=308702)",612.0254623699925,1,,
+Car 106,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 1 (fid=308702)",613.0254623699925,1,,
+Car 139,53.0,308108,4,,,done,,done charging,617.0,,,110.92774990052858
+Car 85,53.0,307905,3,,,done,,done charging,619.0331631865413,,,87.18654299830123
+Car 122,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",623.1989298564712,7,,
+Car 122,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),623.813051128826,,35.0,
+Car 157,,,,32,,arrived,,arrived,624.0,,,
+Car 157,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),624.0,,0.0,
+Car 106,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",624.1989298564712,7,,
+Car 106,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),624.813051128826,,35.0,
+Car 128,,,,37,,arrived,,arrived,633.0,,,
+Car 128,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),633.0,,0.0,
+Car 152,,,,37,,arrived,,arrived,645.0,,,
+Car 17,,,,118,,arrived,,arrived,648.0,,,
+Car 17,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),648.0,,0.0,
+Car 24,92.0,73,5,,,done,,done charging,649.2700814049706,,,166.61423346465116
+Car 152,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),649.2700814049706,,4.270081404970597,
+Car 87,,,,6,,arrived,,arrived,651.0,,,
+Car 123,,,,81,,arrived,,arrived,651.0,,,
+Car 87,,307905,3,,,start_charge,,starting to charge at Charger 3 (fid=307905),651.0,,0.0,
+Car 171,111.0,308108,4,,,done,,done charging,652.0,,,163.9344186953887
+Car 63,,,,11,,arrived,,arrived,654.0,,,
+Car 63,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),654.0,,0.0,
+Car 170,113.0,308440,0,,,done,,done charging,655.1954459306037,,,438.31685070275734
+Car 123,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",656.0,2,,
+Car 1,80.0,308702,1,,,done,,done charging,660.2213441925694,,,171.88908892071126
+Car 123,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 0 (fid=308440)",661.0331631865413,0,,
+Car 123,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),663.921638874809,,10.0,
+Car 138,96.0,308702,1,,,done,,done charging,664.7977775926894,,,440.7280830409881
+Car 84,,,,62,,arrived,,arrived,680.0,,,
+Car 84,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),680.0,,0.0,
+Car 47,,,,7,,arrived,,arrived,688.0,,,
+Car 47,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),688.0,,0.0,
+Car 122,65.0,30,7,,,done,,done charging,688.813051128826,,,321.5257226739586
+Car 106,64.0,30,7,,,done,,done charging,688.813051128826,,,321.5257226739586
+Car 157,68.0,308440,0,,,done,,done charging,692.0,,,65.87365926527472
+Car 152,49.0,73,5,,,done,,done charging,698.2700814049706,,,52.18342097829892
+Car 46,,,,11,,arrived,,arrived,704.0,,,
+Car 99,,,,33,,arrived,,arrived,708.0,,,
+Car 99,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),708.0,,0.0,
+Car 46,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",709.0,5,,
+Car 46,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),711.2700814049707,,5.0,
+Car 128,79.0,73,5,,,done,,done charging,712.0,,,52.18342097829892
+Car 17,65.0,307904,2,,,done,,done charging,713.0,,,155.29479068208533
+Car 127,,,,1,,arrived,,arrived,720.0,,,
+Car 127,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",725.0,2,,
+Car 127,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),725.0331631865413,,5.0,
+Car 63,77.0,60,6,,,done,,done charging,731.0,,,99.55289654250225
+Car 47,46.0,308108,4,,,done,,done charging,734.0,,,55.70976389286317
+Car 44,,,,23,,arrived,,arrived,738.0,,,
+Car 44,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),738.0,,0.0,
+Car 172,,,,71,,arrived,,arrived,739.0,,,
+Car 42,,,,37,,arrived,,arrived,741.0,,,
+Car 42,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),741.0,,0.0,
+Car 84,63.0,60,6,,,done,,done charging,743.0,,,45.85174722953972
+Car 172,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",744.0,1,,
+Car 71,,,,4,,arrived,,arrived,746.0,,,
+Car 172,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),746.2213441925694,,5.0,
+Car 71,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",751.0,1,,
+Car 71,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),753.3362534430447,,5.0,
+Car 87,103.0,307905,3,,,done,,done charging,754.0,,,113.57507207568851
+Car 6,,,,4,,arrived,,arrived,758.0,,,
+Car 91,,,,66,,arrived,,arrived,758.0,,,
+Car 6,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),758.0,,0.0,
+Car 46,51.0,73,5,,,done,,done charging,762.2700814049707,,,109.89012633535583
+Car 91,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),762.2700814049707,,4.2700814049707105,
+Car 94,,,,1,,arrived,,arrived,764.0,,,
+Car 94,,307905,3,,,start_charge,,starting to charge at Charger 3 (fid=307905),764.0,,0.0,
+Car 154,,,,34,,arrived,,arrived,771.0,,,
+Car 123,109.0,308440,0,,,done,,done charging,772.921638874809,,,155.8079645974438
+Car 154,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),772.921638874809,,1.9216388748089912,
+Car 20,,,,55,,arrived,,arrived,780.0,,,
+Car 20,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",785.0,1,,
+Car 44,48.0,30,7,,,done,,done charging,786.0,,,138.60937818200497
+Car 26,,,,7,,arrived,,arrived,787.0,,,
+Car 26,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),787.0,,0.0,
+Car 42,49.0,73,5,,,done,,done charging,790.0,,,52.18342097829892
+Car 19,,,,17,,arrived,,arrived,791.0,,,
+Car 20,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",792.2213441925694,7,,
+Car 20,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),792.8354654649243,,10.0,
+Car 19,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 6 (fid=60)",796.0,6,,
+Car 19,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),799.2596920472862,,5.0,
+Car 146,,,,21,,arrived,,arrived,801.0,,,
+Car 127,78.0,307904,2,,,done,,done charging,803.0331631865413,,,31.045940314342904
+Car 146,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",806.0,1,,
+Car 146,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 3 (fid=307905)",813.2213441925694,3,,
+Car 21,,,,87,,arrived,,arrived,814.0,,,
+Car 21,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),814.0,,0.0,
+Car 9,,,,57,,arrived,,arrived,818.0,,,
+Car 99,114.0,308440,0,,,done,,done charging,822.0,,,64.88909191074565
+Car 9,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),822.0,,4.0,
+Car 146,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",822.8027853296818,2,,
+Car 146,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),822.8359485162231,,15.0,
+Car 91,63.0,73,5,,,done,,done charging,825.2700814049707,,,166.61423346465116
+Car 92,,,,77,,arrived,,arrived,828.0,,,
+Car 150,,,,25,,arrived,,arrived,833.0,,,
+Car 92,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 3 (fid=307905)",833.0,3,,
+Car 150,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 3 (fid=307905)",838.0,3,,
+Car 172,94.0,308702,1,,,done,,done charging,840.2213441925694,,,163.40775801963517
+Car 92,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",840.224325873735,2,,
+Car 156,,,,63,,arrived,,arrived,842.0,,,
+Car 156,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),842.0,,0.0,
+Car 68,,,,10,,arrived,,arrived,843.0,,,
+Car 68,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),843.0,,0.0,
+Car 92,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 4 (fid=308108)",845.2574890602763,4,,
+Car 150,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",845.8588498683722,2,,
+Car 6,88.0,60,6,,,done,,done charging,846.0,,,59.80497675779154
+Car 26,62.0,308108,4,,,done,,done charging,849.0,,,55.70976389286317
+Car 92,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),849.0,,17.06424611668251,
+Car 178,,,,51,,arrived,,arrived,850.0,,,
+Car 178,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),850.0,,0.0,
+Car 150,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 1 (fid=308702)",850.8920130549135,1,,
+Car 150,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),855.5065155114365,,15.0,
+Car 21,46.0,308108,4,,,done,,done charging,860.0,,,146.4039065735645
+Car 71,107.0,308702,1,,,done,,done charging,860.3362534430447,,,191.503964742292
+Car 94,102.0,307905,3,,,done,,done charging,866.0,,,30.92859861038139
+Car 120,,,,73,,arrived,,arrived,872.0,,,
+Car 154,100.0,308440,0,,,done,,done charging,872.921638874809,,,66.5655819849946
+Car 120,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",877.0,6,,
+Car 20,86.0,30,7,,,done,,done charging,878.8354654649243,,,164.6094204624996
+Car 114,,,,5,,arrived,,arrived,880.0,,,
+Car 114,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),880.0,,0.0,
+Car 9,59.0,308440,0,,,done,,done charging,881.0,,,90.91052172331317
+Car 2,,,,46,,arrived,,arrived,882.0,,,
+Car 2,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),882.0,,0.0,
+Car 120,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 1 (fid=308702)",884.2700814049707,1,,
+Car 146,62.0,307904,2,,,done,,done charging,884.8359485162231,,,221.8004614084484
+Car 45,,,,68,,arrived,,arrived,892.0,,,
+Car 45,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),892.0,,0.0,
+Car 120,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",893.0964198936251,7,,
+Car 120,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),893.71054116598,,15.0,
+Car 156,52.0,73,5,,,done,,done charging,894.0,,,67.49237617689279
+Car 98,,,,37,,arrived,,arrived,896.0,,,
+Car 98,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),896.0,,0.0,
+Car 150,48.0,308702,1,,,done,,done charging,903.5065155114365,,,218.32403010204763
+Car 38,,,,23,,arrived,,arrived,908.0,,,
+Car 38,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),908.0,,0.0,
+Car 131,,,,73,,arrived,,arrived,915.0,,,
+Car 19,117.0,60,6,,,done,,done charging,916.2596920472862,,,160.46889726361894
+Car 131,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",920.0,6,,
+Car 131,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),922.2700814049707,,5.0,
+Car 100,,,,57,,arrived,,arrived,927.0,,,
+Car 82,,,,34,,arrived,,arrived,932.0,,,
+Car 100,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",932.0,1,,
+Car 82,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),932.0,,0.0,
+Car 100,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),934.2213441925694,,5.0,
+Car 68,93.0,73,5,,,done,,done charging,936.0,,,81.59070857031476
+Car 114,56.0,308108,4,,,done,,done charging,936.0,,,145.2156684280546
+Car 81,,,,62,,arrived,,arrived,937.0,,,
+Car 81,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",942.0,5,,
+Car 81,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),944.2700814049707,,5.0,
+Car 48,,,,83,,arrived,,arrived,949.0,,,
+Car 48,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),949.0,,0.0,
+Car 147,,,,58,,arrived,,arrived,953.0,,,
+Car 92,105.0,308108,4,,,done,,done charging,954.0,,,207.3115745948506
+Car 147,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),954.0,,1.0,
+Car 98,66.0,73,5,,,done,,done charging,962.0,,,52.18342097829892
+Car 60,,,,20,,arrived,,arrived,963.0,,,
+Car 178,116.0,60,6,,,done,,done charging,966.0,,,128.4087684895338
+Car 60,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",968.0,1,,
+Car 177,,,,64,,arrived,,arrived,973.0,,,
+Car 112,,,,39,,arrived,,arrived,974.0,,,
+Car 112,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),974.0,,0.0,
+Car 60,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",975.2213441925694,7,,
+Car 120,83.0,30,7,,,done,,done charging,976.71054116598,,,237.8718569019744
+Car 60,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),976.71054116598,,10.87507570105572,
+Car 111,,,,24,,arrived,,arrived,977.0,,,
+Car 177,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 2 (fid=307904)",978.0,2,,
+Car 177,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),979.6782648230412,,5.0,
+Car 45,88.0,308440,0,,,done,,done charging,980.0,,,30.120788203515897
+Car 111,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 1 (fid=308702)",982.0,1,,
+Car 38,77.0,308440,0,,,done,,done charging,985.0,,,29.016744493479898
+Car 2,105.0,308702,1,,,done,,done charging,987.0,,,58.41695935261943
+Car 111,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),987.0,,9.38587872764515,
+Car 117,,,,66,,arrived,,arrived,988.0,,,
+Car 117,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),988.0,,0.0,
+Car 82,62.0,30,7,,,done,,done charging,994.0,,,10.786084831836606
+Car 48,45.0,308108,4,,,done,,done charging,994.0,,,168.71753642404158
+Car 143,,,,47,,arrived,,arrived,999.0,,,
+Car 143,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),999.0,,0.0,
+Car 10,,,,63,,arrived,,arrived,1012.0,,,
+Car 100,79.0,308702,1,,,done,,done charging,1013.2213441925694,,,117.07901974733092
+Car 10,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",1017.0,1,,
+Car 10,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),1019.3362534430447,,5.0,
+Car 101,,,,73,,arrived,,arrived,1025.0,,,
+Car 177,48.0,307904,2,,,done,,done charging,1027.6782648230412,,,243.56441878895433
+Car 101,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",1030.0,6,,
+Car 131,108.0,60,6,,,done,,done charging,1030.2700814049708,,,189.09778103405594
+Car 101,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1032.2700814049706,,5.0,
+Car 76,,,,54,,arrived,,arrived,1034.0,,,
+Car 14,,,,59,,arrived,,arrived,1038.0,,,
+Car 14,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),1038.0,,0.0,
+Car 76,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 0 (fid=308440)",1039.0,0,,
+Car 117,52.0,73,5,,,done,,done charging,1040.0,,,166.61423346465116
+Car 76,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1041.2213441925694,,5.0,
+Car 147,90.0,308108,4,,,done,,done charging,1044.0,,,66.81565508921547
+Car 112,73.0,60,6,,,done,,done charging,1047.0,,,132.86277777089586
+Car 81,106.0,73,5,,,done,,done charging,1050.2700814049708,,,145.31133975020617
+Car 57,,,,14,,arrived,,arrived,1051.0,,,
+Car 57,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1051.0,,0.0,
+Car 165,,,,55,,arrived,,arrived,1054.0,,,
+Car 133,,,,56,,arrived,,arrived,1055.0,,,
+Car 111,68.0,308702,1,,,done,,done charging,1055.0,,,158.47430268975955
+Car 41,,,,8,,arrived,,arrived,1059.0,,,
+Car 165,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",1059.0,1,,
+Car 41,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),1059.0,,0.0,
+Car 133,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",1060.0,1,,
+Car 165,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),1061.2213441925694,,5.0,
+Car 69,,,,25,,arrived,,arrived,1064.0,,,
+Car 70,,,,55,,arrived,,arrived,1065.0,,,
+Car 133,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",1067.2213441925694,7,,
+Car 69,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 1 (fid=308702)",1069.0,1,,
+Car 70,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",1070.0,1,,
+Car 133,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 5 (fid=73)",1072.8354654649243,5,,
+Car 69,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 5 (fid=73)",1074.6141212723549,5,,
+Car 133,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),1075.6910699895577,,15.0,
+Car 70,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",1077.2213441925694,7,,
+Car 102,,,,4,,arrived,,arrived,1079.0,,,
+Car 118,,,,27,,arrived,,arrived,1079.0,,,
+Car 69,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 0 (fid=308440)",1081.9503747153997,0,,
+Car 101,50.0,60,6,,,done,,done charging,1082.2700814049706,,,189.09778103405594
+Car 70,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 5 (fid=73)",1082.8354654649243,5,,
+Car 102,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",1084.0,1,,
+Car 118,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 3 (fid=307905)",1084.0,3,,
+Car 118,,307905,3,,,start_charge,,starting to charge at Charger 3 (fid=307905),1086.8588498683723,,5.0,
+Car 59,,,,76,,arrived,,arrived,1087.0,,,
+Car 59,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),1087.0,,0.0,
+Car 167,,,,7,,arrived,,arrived,1088.0,,,
+Car 69,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 6 (fid=60)",1090.2164529344407,6,,
+Car 70,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",1090.6910699895577,6,,
+Car 60,114.0,30,7,,,done,,done charging,1090.71054116598,,,221.7261772908043
+Car 102,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",1091.3362534430448,7,,
+Car 102,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),1091.9503747153997,,10.0,
+Car 70,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1092.9611513945283,,20.0,
+Car 167,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 2 (fid=307904)",1093.0,2,,
+Car 69,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1093.4761449817267,,20.0,
+Car 167,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),1094.6782648230412,,5.0,
+Car 57,45.0,308440,0,,,done,,done charging,1096.0,,,95.26950640156508
+Car 14,64.0,308108,4,,,done,,done charging,1102.0,,,80.10518775959693
+Car 76,64.0,308440,0,,,done,,done charging,1105.2213441925694,,,132.29525314614574
+Car 165,48.0,308702,1,,,done,,done charging,1109.2213441925694,,,119.22275984054737
+Car 121,,,,42,,arrived,,arrived,1116.0,,,
+Car 121,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),1116.0,,0.0,
+Car 51,,,,16,,arrived,,arrived,1117.0,,,
+Car 143,118.0,30,7,,,done,,done charging,1117.0,,,79.60474127214951
+Car 51,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1117.0,,0.0,
+Car 10,104.0,308702,1,,,done,,done charging,1123.3362534430448,,,207.74268424426072
+Car 133,51.0,73,5,,,done,,done charging,1126.6910699895577,,,219.85998521102653
+Car 22,,,,88,,arrived,,arrived,1128.0,,,
+Car 22,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),1128.0,,0.0,
+Car 102,45.0,30,7,,,done,,done charging,1136.9503747153997,,,214.3753042517166
+Car 103,,,,56,,arrived,,arrived,1140.0,,,
+Car 103,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1140.0,,0.0,
+Car 70,51.0,60,6,,,done,,done charging,1143.9611513945283,,,232.20973797197033
+Car 137,,,,10,,arrived,,arrived,1144.0,,,
+Car 137,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),1144.0,,0.0,
+Car 41,87.0,73,5,,,done,,done charging,1146.0,,,46.809697563664486
+Car 69,63.0,60,6,,,done,,done charging,1156.4761449817267,,,433.2265411594949
+Car 149,,,,21,,arrived,,arrived,1166.0,,,
+Car 105,,,,34,,arrived,,arrived,1168.0,,,
+Car 83,,,,38,,arrived,,arrived,1171.0,,,
+Car 149,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",1171.0,3,,
+Car 83,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),1171.0,,0.0,
+Car 18,,,,1,,arrived,,arrived,1172.0,,,
+Car 121,57.0,308702,1,,,done,,done charging,1173.0,,,26.131931520675778
+Car 105,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 3 (fid=307905)",1173.0,3,,
+Car 149,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 4 (fid=308108)",1176.0331631865413,4,,
+Car 18,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1177.0,2,,
+Car 105,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 1 (fid=308702)",1180.8588498683723,1,,
+Car 110,,,,16,,arrived,,arrived,1181.0,,,
+Car 18,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 4 (fid=308108)",1182.0331631865413,4,,
+Car 149,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 0 (fid=308440)",1182.7402884034016,0,,
+Car 105,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),1185.4402910054846,,10.0,
+Car 110,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 6 (fid=60)",1186.0,6,,
+Car 18,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 6 (fid=60)",1188.7114280095825,6,,
+Car 110,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1189.259692047286,,5.0,
+Car 18,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1191.7182350281892,,15.0,
+Car 149,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 6 (fid=60)",1192.3053391555093,6,,
+Car 59,107.0,308108,4,,,done,,done charging,1194.0,,,110.31849156420415
+Car 118,109.0,307905,3,,,done,,done charging,1195.8588498683723,,,183.50035673263383
+Car 149,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",1200.5650312027954,5,,
+Car 167,106.0,307904,2,,,done,,done charging,1200.6782648230412,,,84.49375326023811
+Car 155,,,,38,,arrived,,arrived,1203.0,,,
+Car 64,,,,89,,arrived,,arrived,1204.0,,,
+Car 64,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),1204.0,,0.0,
+Car 75,,,,61,,arrived,,arrived,1206.0,,,
+Car 137,62.0,73,5,,,done,,done charging,1206.0,,,81.59070857031476
+Car 149,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),1206.0,,28.16488739223405,
+Car 155,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",1208.0,1,,
+Car 155,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),1210.3362534430448,,5.0,
+Car 72,,,,39,,arrived,,arrived,1211.0,,,
+Car 75,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",1211.0,5,,
+Car 58,,,,40,,arrived,,arrived,1213.0,,,
+Car 148,,,,85,,arrived,,arrived,1213.0,,,
+Car 129,,,,71,,arrived,,arrived,1214.0,,,
+Car 51,98.0,308440,0,,,done,,done charging,1215.0,,,120.70032154058093
+Car 129,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1215.0,,1.0,
+Car 52,,,,45,,arrived,,arrived,1216.0,,,
+Car 72,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 4 (fid=308108)",1216.0,4,,
+Car 109,,,,1,,arrived,,arrived,1217.0,,,
+Car 109,,307905,3,,,start_charge,,starting to charge at Charger 3 (fid=307905),1217.0,,0.0,
+Car 58,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",1218.0,5,,
+Car 148,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 2 (fid=307904)",1218.0,2,,
+Car 75,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 3 (fid=307905)",1218.2700814049706,3,,
+Car 148,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),1219.6782648230412,,5.0,
+Car 52,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",1221.0,5,,
+Car 72,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 3 (fid=307905)",1224.0068070186067,3,,
+Car 58,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 3 (fid=307905)",1225.2700814049706,3,,
+Car 168,,,,9,,arrived,,arrived,1227.0,,,
+Car 75,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1227.3285645982173,2,,
+Car 52,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 3 (fid=307905)",1228.2700814049706,3,,
+Car 72,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1230.713932235467,2,,
+Car 168,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",1232.0,6,,
+Car 75,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 4 (fid=308108)",1232.3617277847586,4,,
+Car 58,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1234.3285645982173,2,,
+Car 72,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 5 (fid=73)",1235.7470954220082,5,,
+Car 52,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1237.3285645982173,2,,
+Car 4,,,,63,,arrived,,arrived,1238.0,,,
+Car 75,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 0 (fid=308440)",1239.0399926077998,0,,
+Car 168,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 1 (fid=308702)",1239.2700814049706,1,,
+Car 58,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 4 (fid=308108)",1239.3617277847586,4,,
+Car 22,112.0,308108,4,,,done,,done charging,1240.0,,,149.5929398902532
+Car 83,70.0,73,5,,,done,,done charging,1241.0,,,145.25812800664994
+Car 4,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),1241.0,,3.0,
+Car 58,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),1241.0399926077998,,20.0,
+Car 52,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 0 (fid=308440)",1242.3617277847586,0,,
+Car 163,,,,7,,arrived,,arrived,1243.0,,,
+Car 72,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 0 (fid=308440)",1244.8353836214794,0,,
+Car 115,,,,45,,arrived,,arrived,1247.0,,,
+Car 103,108.0,308440,0,,,done,,done charging,1248.0,,,62.86353987009791
+Car 163,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 2 (fid=307904)",1248.0,2,,
+Car 75,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1248.0,,29.39495664009246,
+Car 168,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 3 (fid=307905)",1248.0964198936251,3,,
+Car 52,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",1250.2502034730262,1,,
+Car 115,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",1252.0,5,,
+Car 72,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",1253.1014618405204,1,,
+Car 163,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",1254.6782648230412,3,,
+Car 105,71.0,308702,1,,,done,,done charging,1256.4402910054846,,,193.35480487950738
+Car 52,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),1256.4402910054846,,28.968743339888988,
+Car 168,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 0 (fid=308440)",1257.6778610307374,0,,
+Car 115,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 3 (fid=307905)",1259.2700814049706,3,,
+Car 163,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 6 (fid=60)",1259.7114280095825,6,,
+Car 72,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",1260.3228060330898,7,,
+Car 72,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),1260.9369273054447,,35.0,
+Car 168,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 2 (fid=307904)",1265.5367108991097,2,,
+Car 163,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 0 (fid=308440)",1266.9357538833174,0,,
+Car 173,,,,37,,arrived,,arrived,1268.0,,,
+Car 115,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1268.3285645982173,2,,
+Car 173,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",1273.0,1,,
+Car 115,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 0 (fid=308440)",1273.3617277847586,0,,
+Car 168,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 7 (fid=30)",1273.4251865873773,7,,
+Car 113,,,,37,,arrived,,arrived,1274.0,,,
+Car 149,69.0,73,5,,,done,,done charging,1275.0,,,418.52331148934815
+Car 113,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),1275.0,,1.0,
+Car 163,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 5 (fid=73)",1275.1954459306035,5,,
+Car 168,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),1278.597910475005,,30.0,
+Car 110,90.0,60,6,,,done,,done charging,1279.259692047286,,,158.9030009156657
+Car 173,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",1280.3362534430448,7,,
+Car 115,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",1281.2502034730262,1,,
+Car 53,,,,84,,arrived,,arrived,1283.0,,,
+Car 109,66.0,307905,3,,,done,,done charging,1283.0,,,30.92859861038139
+Car 163,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",1283.4615241496444,1,,
+Car 173,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 6 (fid=60)",1285.9503747153997,6,,
+Car 53,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 2 (fid=307904)",1288.0,2,,
+Car 115,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 4 (fid=308108)",1288.4715476655956,4,,
+Car 173,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1290.3902070185698,,15.0,
+Car 163,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",1290.7977775926893,7,,
+Car 53,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",1294.6782648230412,3,,
+Car 53,,307905,3,,,start_charge,,starting to charge at Charger 3 (fid=307905),1294.7114280095825,,10.0,
+Car 64,92.0,308108,4,,,done,,done charging,1296.0,,,143.26406436368646
+Car 115,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),1296.0,,31.354984847925607,
+Car 163,,,,,,gave_up,7,"no alternate charger available, gave up",1296.4118988650441,,,
+Car 148,80.0,307904,2,,,done,,done charging,1299.6782648230412,,,225.5680105267457
+Car 58,64.0,308108,4,,,done,,done charging,1305.0399926077998,,,265.2782469728414
+Car 116,,,,116,,arrived,,arrived,1306.0,,,
+Car 164,,,,6,,arrived,,arrived,1306.0,,,
+Car 75,59.0,308440,0,,,done,,done charging,1307.0,,,372.6263511199846
+Car 116,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1307.0,,1.0,
+Car 18,116.0,60,6,,,done,,done charging,1307.7182350281892,,,162.14671048157606
+Car 119,,,,33,,arrived,,arrived,1311.0,,,
+Car 129,96.0,308440,0,,,done,,done charging,1311.0,,,45.5827752775002
+Car 164,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1311.0,2,,
+Car 164,,307904,2,,,start_charge,,starting to charge at Charger 2 (fid=307904),1311.0331631865413,,5.0,
+Car 135,,,,65,,arrived,,arrived,1312.0,,,
+Car 67,,,,8,,arrived,,arrived,1314.0,,,
+Car 119,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 1 (fid=308702)",1316.0,1,,
+Car 4,76.0,73,5,,,done,,done charging,1317.0,,,67.49237617689279
+Car 135,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 1 (fid=308702)",1317.0,1,,
+Car 67,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",1319.0,6,,
+Car 39,,,,20,,arrived,,arrived,1320.0,,,
+Car 39,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1320.0,,0.0,
+Car 153,,,,27,,arrived,,arrived,1321.0,,,
+Car 67,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1321.2700814049706,,5.0,
+Car 119,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 5 (fid=73)",1321.6141212723549,5,,
+Car 155,112.0,308702,1,,,done,,done charging,1322.3362534430448,,,147.01738517944844
+Car 135,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),1322.3362534430448,,8.0,
+Car 153,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 3 (fid=307905)",1326.0,3,,
+Car 119,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 0 (fid=308440)",1328.9503747153997,0,,
+Car 73,,,,66,,arrived,,arrived,1330.0,,,
+Car 169,,,,23,,arrived,,arrived,1332.0,,,
+Car 37,,,,71,,arrived,,arrived,1333.0,,,
+Car 153,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1333.8588498683723,2,,
+Car 73,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 6 (fid=60)",1335.0,6,,
+Car 173,45.0,60,6,,,done,,done charging,1335.3902070185698,,,220.1664705013157
+Car 169,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",1337.0,1,,
+Car 119,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 6 (fid=60)",1337.2164529344407,6,,
+Car 73,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1337.2700814049706,,5.0,
+Car 37,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 1 (fid=308702)",1338.0,1,,
+Car 153,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 1 (fid=308702)",1338.8920130549136,1,,
+Car 86,,,,4,,arrived,,arrived,1340.0,,,
+Car 169,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 3 (fid=307905)",1344.2213441925694,3,,
+Car 86,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 3 (fid=307905)",1345.0,3,,
+Car 37,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 7 (fid=30)",1345.2213441925694,7,,
+Car 119,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 3 (fid=307905)",1345.4761449817267,3,,
+Car 72,87.0,30,7,,,done,,done charging,1347.9369273054447,,,499.79768979559924
+Car 37,,30,7,,,start_charge,,starting to charge at Charger 7 (fid=30),1347.9369273054447,,12.101461840520415,
+Car 153,,,,,1,switch,,"Charger 1 (fid=308702) not available, trying Charger 6 (fid=60)",1348.5065155114366,6,,
+Car 52,94.0,308702,1,,,done,,done charging,1350.4402910054846,,,275.05852799903874
+Car 86,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1352.2243258737349,2,,
+Car 119,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1352.7004708554616,2,,
+Car 169,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1353.8027853296817,2,,
+Car 86,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 4 (fid=308108)",1357.2574890602762,4,,
+Car 153,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 7 (fid=30)",1357.3328540000912,7,,
+Car 119,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 4 (fid=308108)",1357.733634042003,4,,
+Car 169,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 7 (fid=30)",1358.835948516223,7,,
+Car 86,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),1358.9357538833174,,15.0,
+Car 119,,,,,,gave_up,4,"no alternate charger available, gave up",1364.4118988650441,,,
+Car 153,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 5 (fid=73)",1366.7726863032613,5,,
+Car 115,71.0,308108,4,,,done,,done charging,1367.0,,,295.6435046893238
+Car 169,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 6 (fid=60)",1369.0086724038506,6,,
+Car 153,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 4 (fid=308108)",1374.6282908278947,4,,
+Car 169,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 5 (fid=73)",1378.4485047070207,5,,
+Car 153,,308108,4,,,start_charge,,starting to charge at Charger 4 (fid=308108),1379.8498488642674,,35.0,
+Car 116,73.0,308440,0,,,done,,done charging,1380.0,,,123.27608821257881
+Car 36,,,,118,,arrived,,arrived,1384.0,,,
+Car 169,,,,,5,switch,,"Charger 5 (fid=73) not available, trying Charger 4 (fid=308108)",1385.7185861119913,4,,
+Car 49,,,,60,,arrived,,arrived,1386.0,,,
+Car 160,,,,32,,arrived,,arrived,1386.0,,,
+Car 95,,,,57,,arrived,,arrived,1389.0,,,
+Car 36,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 3 (fid=307905)",1389.0,3,,
+Car 95,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1389.0,,0.0,
+Car 113,115.0,73,5,,,done,,done charging,1390.0,,,52.18342097829892
+Car 49,,,,,6,switch,,"Charger 6 (fid=60) not available, trying Charger 3 (fid=307905)",1391.0,3,,
+Car 160,,,,,7,switch,,"Charger 7 (fid=30) not available, trying Charger 1 (fid=308702)",1391.0,1,,
+Car 160,,308702,1,,,start_charge,,starting to charge at Charger 1 (fid=308702),1391.6141212723549,,5.0,
+Car 36,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 4 (fid=308108)",1394.0331631865413,4,,
+Car 67,74.0,60,6,,,done,,done charging,1395.2700814049706,,,218.4407527225607
+Car 169,,,,,,gave_up,4,"no alternate charger available, gave up",1395.940144148364,,,
+Car 49,,,,,3,switch,,"Charger 3 (fid=307905) not available, trying Charger 2 (fid=307904)",1398.2243258737349,2,,
+Car 168,120.0,30,7,,,done,,done charging,1398.597910475005,,,331.69741308158797
+Car 36,,,,,4,switch,,"Charger 4 (fid=308108) not available, trying Charger 0 (fid=308440)",1400.7402884034016,0,,
+Car 49,,,,,2,switch,,"Charger 2 (fid=307904) not available, trying Charger 5 (fid=73)",1403.2574890602762,5,,
+Car 135,82.0,308702,1,,,done,,done charging,1404.3362534430448,,,232.57751411520684
+Car 53,111.0,307905,3,,,done,,done charging,1405.7114280095825,,,231.55132172800606
+Car 49,,73,5,,,start_charge,,starting to charge at Charger 5 (fid=73),1407.3457772597474,,15.0,
+Car 36,,,,,0,switch,,"Charger 0 (fid=308440) not available, trying Charger 6 (fid=60)",1410.3053391555093,6,,
+Car 86,52.0,308108,4,,,done,,done charging,1410.9357538833174,,,203.88932248646864
+Car 164,100.0,307904,2,,,done,,done charging,1411.0331631865413,,,116.29806358230654
+Car 36,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1413.5650312027954,,20.0,
+Car 73,79.0,60,6,,,done,,done charging,1416.2700814049706,,,198.71055695408816
+Car 142,,,,50,,arrived,,arrived,1422.0,,,
+Car 142,,60,6,,,start_charge,,starting to charge at Charger 6 (fid=60),1422.0,,0.0,
+Car 39,113.0,308440,0,,,done,,done charging,1433.0,,,19.017938111156827
+Car 7,,,,45,,arrived,,arrived,1435.0,,,
+Car 107,,,,116,,arrived,,arrived,1438.0,,,
+Car 107,,308440,0,,,start_charge,,starting to charge at Charger 0 (fid=308440),1438.0,,0.0,
