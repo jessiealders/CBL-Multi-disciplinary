@@ -844,10 +844,25 @@ def run_simulation(
     ]
     total_walkdist = sum(car.walkingDist for car in completed_cars)
     total_waiting = sum(car.waitingTime for car in completed_cars)
-    total_utilization = sum(
+    charger_utilizations = [
         charger.chargingTime / (simulation_time * charger.connectors)
         for charger in src.chargers
+    ]
+    total_utilization = sum(charger_utilizations)
+    successfully_charged = len(completed_cars)
+    abandoned_attempts = len(gave_up_cars)
+    successfully_charged_pct = successfully_charged / num_cars * 100 if num_cars else 0
+    abandoned_attempts_pct = abandoned_attempts / num_cars * 100 if num_cars else 0
+    average_waiting_time = (
+        total_waiting / successfully_charged if successfully_charged else 0
     )
+    average_walking_distance = (
+        total_walkdist / successfully_charged if successfully_charged else 0
+    )
+    average_charger_utilization = (
+        total_utilization / len(src.chargers) if src.chargers else 0
+    )
+    maximum_charger_utilization = max(charger_utilizations) if charger_utilizations else 0
 
     events_path = write_events(events_dir, scenario_name, src.events)
     charger_fids = ";".join(str(location.fid) for location in charger_locations)
@@ -860,19 +875,14 @@ def run_simulation(
         "num_chargers": len(charger_locations),
         "max_wait_time": config.get("max_wait_time", 5),
         "walking_threshold_m": config["walking_threshold_m"],
-        "completed_charging": len(completed_cars),
-        "gave_up": len(gave_up_cars),
-        "completed_pct": len(completed_cars) / num_cars * 100,
-        "gave_up_pct": len(gave_up_cars) / num_cars * 100,
-        "avg_waiting_time": (
-            total_waiting / len(completed_cars) if completed_cars else 0
-        ),
-        "avg_walking_dist_m": (
-            total_walkdist / len(completed_cars) if completed_cars else 0
-        ),
-        "avg_charger_utilization": (
-            total_utilization / len(src.chargers) if src.chargers else 0
-        ),
+        "completed_charging": successfully_charged,
+        "gave_up": abandoned_attempts,
+        "completed_pct": successfully_charged_pct,
+        "gave_up_pct": abandoned_attempts_pct,
+        "avg_waiting_time": average_waiting_time,
+        "avg_walking_dist_m": average_walking_distance,
+        "avg_charger_utilization": average_charger_utilization,
+        "max_charger_utilization": maximum_charger_utilization,
         "charger_fids": charger_fids
     }
 
@@ -881,7 +891,7 @@ def print_summary(results: list[dict]) -> None:
     print("\nSimulation result")
     print(
         f"{'scenario':<24} {'completed %':>11} {'gave up %':>9} "
-        f"{'avg wait':>9} {'avg walk m':>11} {'utilization':>11}"
+        f"{'avg wait':>9} {'avg walk m':>11} {'avg util':>9} {'max util':>9}"
     )
     for result in results:
         print(
@@ -890,7 +900,8 @@ def print_summary(results: list[dict]) -> None:
             f"{result['gave_up_pct']:>9.1f} "
             f"{result['avg_waiting_time']:>9.2f} "
             f"{result['avg_walking_dist_m']:>11.1f} "
-            f"{result['avg_charger_utilization']:>11.2f}"
+            f"{result['avg_charger_utilization']:>9.2f} "
+            f"{result['max_charger_utilization']:>9.2f}"
         )
 
 
