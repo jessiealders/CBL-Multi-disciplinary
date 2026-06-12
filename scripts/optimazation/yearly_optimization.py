@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import concurrent.futures
 import csv
 import importlib.util
+import os
 import random
 import sys
 from collections import Counter, defaultdict
@@ -38,7 +40,7 @@ def load_simulation_module():
     spec.loader.exec_module(module)
     return module
 ##-----------------------------------
-USE_WALKING_NETWORK_DISTANCE = False
+USE_WALKING_NETWORK_DISTANCE = True
 ##-----------------------------------
 
 simulation = load_simulation_module()
@@ -470,39 +472,67 @@ def run_cumulative_yearly_repetitions(
     return results
 
 
-def main() -> None:
-    """Run the full yearly charger optimization workflow."""
+# ---------------------------------------------------------------------------
+# Parallel worker helpers
+# ---------------------------------------------------------------------------
+
+_WORKER_DATA: dict = {}
+
+
+def _worker_init() -> None:
+    """Load shared data once per worker process."""
     candidates = load_candidate_locations(CANDIDATE_LOCATIONS_PATH)
-    existing_charger_locations = load_existing_charger_locations(EXISTING_CHARGERS_PATH)
-    destination_weights = load_blended_heatmap_weights(
+    _WORKER_DATA["candidates"] = candidates
+    _WORKER_DATA["existing"] = load_existing_charger_locations(EXISTING_CHARGERS_PATH)
+    _WORKER_DATA["weights"] = load_blended_heatmap_weights(
         candidates, HEATMAP_DENSITY_PATH, EV_DEMAND_HEATMAP_PATH
     )
-    walking_network = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
+    _WORKER_DATA["network"] = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
+    _WORKER_DATA["ev_adoption"] = load_ev_adoption_inputs(EV_ADOPTION_FORECAST_PATH)
+
+
+def _worker_run_seed(seed: int) -> list[dict[str, Any]]:
+    """Run one full seed chain in a worker process."""
+    return run_cumulative_yearly_optimization(
+        _WORKER_DATA["ev_adoption"],
+        _WORKER_DATA["candidates"],
+        _WORKER_DATA["weights"],
+        _WORKER_DATA["existing"],
+        _WORKER_DATA["network"],
+        seed=seed,
+    )
+
+
+def main() -> None:
+    """Run the full yearly charger optimization workflow."""
     OUTPUT_DIR.mkdir(exist_ok=True)
     print(f"Using distance mode: {selected_distance_mode()}")
 
-    ev_adoption_inputs = load_ev_adoption_inputs(
-        EV_ADOPTION_FORECAST_PATH
-    )
     seeds = list(range(NUMBER_OF_RUNS))
     if not seeds:
         raise ValueError("NUMBER_OF_RUNS must be at least 1.")
 
-    results = run_cumulative_yearly_repetitions(
-        ev_adoption_inputs,
-        candidates,
-        destination_weights,
-        existing_charger_locations,
-        walking_network,
-        seeds,
-    )
-    
-    out_path = ROOT / "output" / "optimization"/"optimization_results.csv"
+    n_workers = min(len(seeds), os.cpu_count() or 1)
+    print(f"Running {len(seeds)} seeds across {n_workers} parallel workers...")
+
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=n_workers,
+        initializer=_worker_init,
+    ) as executor:
+        futures = {executor.submit(_worker_run_seed, seed): seed for seed in seeds}
+        results: list[dict[str, Any]] = []
+        for future in concurrent.futures.as_completed(futures):
+            seed = futures[future]
+            seed_results = future.result()
+            results.extend(seed_results)
+            print(f"  Seed {seed} done ({len(seed_results)} years)")
+
+    out_path = ROOT / "output" / "optimization" / "optimization_results.csv"
     write_csv(out_path, results)
     print(f"Wrote {len(results)} optimization runs to: {out_path}")
 
     averaged_results = average_yearly_results(results)
-    avg_out_path = ROOT / "output" / "optimization"/ "optimization_results_avg.csv"
+    avg_out_path = ROOT / "output" / "optimization" / "optimization_results_avg.csv"
     write_csv(avg_out_path, averaged_results)
     print(
         f"Wrote {len(averaged_results)} averaged optimization years to: "
