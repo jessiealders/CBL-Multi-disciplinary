@@ -8,9 +8,12 @@ import random
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from statistics import mean
 from typing import Any
+from xml.sax.saxutils import escape as xml_escape
+from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -29,6 +32,11 @@ from optimization import (
 )
 
 
+# ---------------------------------------------------------------------------
+# Simulation module loading
+# ---------------------------------------------------------------------------
+
+
 def load_simulation_module():
     """Load the simulation file from its real folder path."""
     simulation_path = SIMULATION_DIR / "simulation.py"
@@ -39,9 +47,22 @@ def load_simulation_module():
     sys.modules["simulation"] = module
     spec.loader.exec_module(module)
     return module
-##-----------------------------------
+
+
+# ---------------------------------------------------------------------------
+# User settings
+# ---------------------------------------------------------------------------
+
 USE_WALKING_NETWORK_DISTANCE = True
-##-----------------------------------
+NUMBER_OF_RUNS = 10
+LOCAL_SEARCH_ROUNDS = 3
+DAILY_EV_ARRIVAL_SHARE = 1.0
+MAX_OPTIMIZED_CHARGERS = 20 #per year
+
+
+# ---------------------------------------------------------------------------
+# Shared simulation defaults
+# ---------------------------------------------------------------------------
 
 simulation = load_simulation_module()
 CANDIDATE_LOCATIONS_PATH = simulation.CANDIDATE_LOCATIONS_PATH
@@ -65,15 +86,19 @@ scale_profile_to_total = simulation.scale_profile_to_total
 select_fixed_locations = simulation.select_fixed_locations
 
 
+# ---------------------------------------------------------------------------
+# Project paths
+# ---------------------------------------------------------------------------
+
 EV_ADOPTION_FORECAST_PATH = (
     ROOT / "processed data" / "ev adoption" / "ev_adoption_forecast.csv"
 )
 OPTIMIZATION_OUTPUT_DIR = ROOT / "output" / "optimization"
-DAILY_EV_ARRIVAL_SHARE = 1.0
-NUMBER_OF_RUNS = 10
-LOCAL_SEARCH_ROUNDS = 3
 
 
+# ---------------------------------------------------------------------------
+# Data models
+# ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class EvAdoptionInput:
@@ -96,7 +121,7 @@ class OptimizationRunConfig:
     min_charge_time: int = DEFAULT_MIN_CHARGE_TIME
     max_charge_time: int = DEFAULT_MAX_CHARGE_TIME
     walking_speed_m_per_min: float = DEFAULT_WALKING_SPEED_M_PER_MIN
-    max_optimized_chargers: int | None = 50
+    max_optimized_chargers: int | None = MAX_OPTIMIZED_CHARGERS
     optimization_settings: OptimizationSettings = field(
         default_factory=lambda: OptimizationSettings(
             local_search_rounds=LOCAL_SEARCH_ROUNDS
@@ -104,6 +129,10 @@ class OptimizationRunConfig:
     )
     write_events: bool = False
 
+
+# ---------------------------------------------------------------------------
+# Distance helpers
+# ---------------------------------------------------------------------------
 
 def location_fids(locations) -> str:
     """Convert selected locations to a fixed-location FID string."""
@@ -113,8 +142,8 @@ def location_fids(locations) -> str:
 def walking_network_distance_fn(walking_network):
     """Create a distance function that uses the real walking network."""
     def distance_m(origin, destination) -> float:
-        origin_lon, origin_lat = origin.lat_lon()
-        destination_lon, destination_lat = destination.lat_lon()
+        origin_lat, origin_lon = origin.lat_lon()
+        destination_lat, destination_lon = destination.lat_lon()
         return walking_network.distance_m(
             origin_lat,
             origin_lon,
@@ -152,6 +181,23 @@ def selected_distance_mode() -> str:
     return "euclidean"
 
 
+def load_walking_network_for_mode() -> WalkingNetwork | None:
+    """Load the walking network only when the optimization uses network distance."""
+    if not USE_WALKING_NETWORK_DISTANCE:
+        return None
+
+    walking_network = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
+    print(
+        f"Loaded walking network: {walking_network.trace_count} traces, "
+        f"{len(walking_network.network_nodes)} connected nodes"
+    )
+    return walking_network
+
+
+# ---------------------------------------------------------------------------
+# Output helpers
+# ---------------------------------------------------------------------------
+
 def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     """Write result rows to a CSV file."""
     if not rows:
@@ -163,6 +209,212 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writeheader()
         writer.writerows(rows)
 
+
+def excel_column_name(index: int) -> str:
+    """Return the Excel column name for a 1-based column number."""
+    name = ""
+    while index:
+        index, remainder = divmod(index - 1, 26)
+        name = chr(65 + remainder) + name
+    return name
+
+
+def worksheet_xml(rows: list[dict[str, Any]], columns: list[str]) -> str:
+    """Build simple worksheet XML for one year of charger locations."""
+    table_rows = [dict(zip(columns, columns))]
+    table_rows.extend(rows)
+
+    row_xml_parts = []
+    for row_index, row in enumerate(table_rows, start=1):
+        cell_xml_parts = []
+        for col_index, column in enumerate(columns, start=1):
+            value = row.get(column, "")
+            cell_ref = f"{excel_column_name(col_index)}{row_index}"
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                cell_xml_parts.append(f'<c r="{cell_ref}"><v>{value}</v></c>')
+            else:
+                text = xml_escape(str(value))
+                cell_xml_parts.append(
+                    f'<c r="{cell_ref}" t="inlineStr"><is><t>{text}</t></is></c>'
+                )
+        row_xml_parts.append(f'<row r="{row_index}">{"".join(cell_xml_parts)}</row>')
+
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<worksheet '
+        'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        f'<sheetData>{"".join(row_xml_parts)}</sheetData>'
+        '</worksheet>'
+    )
+
+
+def write_xlsx(
+    path: Path,
+    sheets: dict[str, list[dict[str, Any]]],
+    columns: list[str],
+) -> None:
+    """Write a small XLSX workbook with one sheet for each year."""
+    if not sheets:
+        raise ValueError(f"No sheets to write to {path}")
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    sheet_names = list(sheets.keys())
+
+    content_types = [
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
+        '<Default Extension="rels" '
+        'ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
+        '<Default Extension="xml" ContentType="application/xml"/>',
+        '<Override PartName="/xl/workbook.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.'
+        'spreadsheetml.sheet.main+xml"/>',
+    ]
+    for sheet_index in range(1, len(sheet_names) + 1):
+        content_types.append(
+            f'<Override PartName="/xl/worksheets/sheet{sheet_index}.xml" '
+            'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        )
+    content_types.append("</Types>")
+
+    workbook_sheets = "".join(
+        f'<sheet name="{xml_escape(name)}" sheetId="{sheet_index}" '
+        f'r:id="rId{sheet_index}"/>'
+        for sheet_index, name in enumerate(sheet_names, start=1)
+    )
+    workbook_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        f"<sheets>{workbook_sheets}</sheets>"
+        "</workbook>"
+    )
+
+    workbook_rels = [
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">',
+    ]
+    for sheet_index in range(1, len(sheet_names) + 1):
+        workbook_rels.append(
+            f'<Relationship Id="rId{sheet_index}" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/'
+            'relationships/worksheet" '
+            f'Target="worksheets/sheet{sheet_index}.xml"/>'
+        )
+    workbook_rels.append("</Relationships>")
+
+    with ZipFile(path, "w", ZIP_DEFLATED) as workbook:
+        workbook.writestr("[Content_Types].xml", "".join(content_types))
+        workbook.writestr(
+            "_rels/.rels",
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/'
+            'relationships/officeDocument" '
+            'Target="xl/workbook.xml"/>'
+            "</Relationships>",
+        )
+        workbook.writestr("xl/workbook.xml", workbook_xml)
+        workbook.writestr("xl/_rels/workbook.xml.rels", "".join(workbook_rels))
+        for sheet_index, sheet_name in enumerate(sheet_names, start=1):
+            workbook.writestr(
+                f"xl/worksheets/sheet{sheet_index}.xml",
+                worksheet_xml(sheets[sheet_name], columns),
+            )
+
+
+def selected_location_fids(selected_locations: str) -> list[str]:
+    """Split the selected-location FID string into single FID values."""
+    return [
+        fid.strip()
+        for fid in str(selected_locations).split(";")
+        if fid.strip()
+    ]
+
+
+def location_xy(location) -> tuple[float | str, float | str]:
+    """Return x and y coordinates for a charger location."""
+    return (
+        getattr(location, "x", ""),
+        getattr(location, "y", ""),
+    )
+
+
+def build_charging_point_location_rows(
+    averaged_results: list[dict[str, Any]],
+    all_locations,
+    existing_locations,
+) -> list[dict[str, Any]]:
+    """Build one row for each selected charging point in each averaged year."""
+    location_lookup = {str(location.fid): location for location in all_locations}
+    existing_fids = {str(location.fid) for location in existing_locations}
+    rows: list[dict[str, Any]] = []
+
+    for result in averaged_results:
+        year = result["year"]
+        for order, fid in enumerate(
+            selected_location_fids(result["selected_locations"]),
+            start=1,
+        ):
+            location = location_lookup.get(fid)
+            x_coordinate, y_coordinate = location_xy(location) if location else ("", "")
+            connectors = (
+                getattr(location, "connectors", None) or DEFAULT_CHARGER_CONNECTORS
+                if location
+                else ""
+            )
+            rows.append(
+                {
+                    "year": year,
+                    "charger_order": order,
+                    "fid": fid,
+                    "charger_type": "existing" if fid in existing_fids else "optimized",
+                    "x_coordinate": x_coordinate,
+                    "y_coordinate": y_coordinate,
+                    "connectors": connectors,
+                }
+            )
+
+    return rows
+
+
+def write_charging_point_location_outputs(
+    output_dir: Path,
+    averaged_results: list[dict[str, Any]],
+    all_locations,
+    existing_locations,
+) -> tuple[Path, Path]:
+    """Write selected charger locations as one CSV and one workbook by year."""
+    rows = build_charging_point_location_rows(
+        averaged_results,
+        all_locations,
+        existing_locations,
+    )
+    csv_path = output_dir / "optimization_charging_point_locations.csv"
+    write_csv(csv_path, rows)
+
+    columns = list(rows[0].keys())
+    sheets: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        sheets[str(row["year"])].append(row)
+
+    xlsx_path = output_dir / "optimization_charging_point_locations_by_year.xlsx"
+    try:
+        write_xlsx(xlsx_path, dict(sheets), columns)
+    except PermissionError:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        xlsx_path = (
+            output_dir
+            / f"optimization_charging_point_locations_by_year_{timestamp}.xlsx"
+        )
+        write_xlsx(xlsx_path, dict(sheets), columns)
+    return csv_path, xlsx_path
+
+
+# ---------------------------------------------------------------------------
+# Small calculation helpers
+# ---------------------------------------------------------------------------
 
 def round2(value: float) -> float:
     """Round a number to 2 decimal places."""
@@ -187,6 +439,10 @@ def simulation_kpis_feasible(
         and utilization <= settings.max_charger_utilization
     )
 
+
+# ---------------------------------------------------------------------------
+# EV adoption input
+# ---------------------------------------------------------------------------
 
 def load_ev_adoption_inputs(path: Path) -> dict[int, EvAdoptionInput]:
     """Load yearly EV adoption inputs from the forecast CSV."""
@@ -228,6 +484,10 @@ def load_ev_adoption_inputs(path: Path) -> dict[int, EvAdoptionInput]:
     return ev_adoption_inputs
 
 
+# ---------------------------------------------------------------------------
+# Result averaging
+# ---------------------------------------------------------------------------
+
 def average_yearly_results(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Average repeated optimization runs per year."""
     grouped = defaultdict(list)
@@ -242,7 +502,9 @@ def average_yearly_results(results: list[dict[str, Any]]) -> list[dict[str, Any]
         averaged_results.append(
             {
                 "year": year,
-                "average_input_ev_cars": round2(mean(r["input_ev_cars"] for r in rows)),
+                "average_input_ev_cars": round2(
+                    mean(r["input_ev_cars"] for r in rows)
+                ),
                 "average_existing_chargers_before": round2(mean(
                     r["existing_chargers_before"] for r in rows
                 )),
@@ -253,9 +515,6 @@ def average_yearly_results(results: list[dict[str, Any]]) -> list[dict[str, Any]
                     mean(r["minimum_chargers"] for r in rows)
                 ),
                 "selected_locations": selected_locations,
-                "average_waiting_time": round2(mean(
-                    r["average_waiting_time"] for r in rows
-                )),
                 "average_served_rate": round2(mean(r["served_rate"] for r in rows)),
                 "average_unmet_rate": round2(mean(r["unmet_rate"] for r in rows)),
                 "average_served_demand": round2(mean(r["served_demand"] for r in rows)),
@@ -265,15 +524,6 @@ def average_yearly_results(results: list[dict[str, Any]]) -> list[dict[str, Any]
                 )),
                 "average_utilization": round2(
                     mean(r["average_utilization"] for r in rows)
-                ),
-                "average_max_utilization": round2(
-                    mean(r["max_utilization"] for r in rows)
-                ),
-                "average_walking_coverage_rate_info": round2(
-                    mean(r["walking_coverage_rate_info"] for r in rows)
-                ),
-                "average_optimization_unmet_rate_info": round2(
-                    mean(r["optimization_unmet_rate_info"] for r in rows)
                 ),
                 "simulation_kpis_feasible": all(
                     r["simulation_kpis_feasible"] for r in rows
@@ -286,6 +536,10 @@ def average_yearly_results(results: list[dict[str, Any]]) -> list[dict[str, Any]
 
     return averaged_results
 
+
+# ---------------------------------------------------------------------------
+# Yearly optimization workflow
+# ---------------------------------------------------------------------------
 
 def build_year_run(
     adoption: EvAdoptionInput,
@@ -313,6 +567,7 @@ def run_one_optimization_year(
     existing_charger_locations,
     walking_network,
     cfg: OptimizationRunConfig,
+    distance_fn=None,
 ) -> dict[str, Any]:
     """Run optimization and simulation for one year and seed."""
     arrival_rng = random.Random()
@@ -325,7 +580,8 @@ def run_one_optimization_year(
         cfg.min_charge_time,
         cfg.max_charge_time,
     )
-    distance_fn = choose_distance_fn(walking_network)
+    if distance_fn is None:
+        distance_fn = choose_distance_fn(walking_network)
     min_new_chargers = 0
 
     while True:
@@ -361,6 +617,7 @@ def run_one_optimization_year(
             walking_speed_m_per_min=cfg.walking_speed_m_per_min,
             fixed_charger_fids=selected_fids,
             charger_connectors=settings.connectors_per_new_charger,
+            distance_mode=selected_distance_mode(),
             write_events=cfg.write_events,
         )
         sim_rng = random.Random()
@@ -439,11 +696,14 @@ def run_cumulative_yearly_optimization(
     existing_charger_locations,
     walking_network,
     seed: int = 0,
+    distance_fn=None,
 ) -> list[dict[str, Any]]:
     """Run years in order, carrying chargers forward each year."""
     results: list[dict[str, Any]] = []
     current_charger_locations = list(existing_charger_locations)
     all_locations = list(existing_charger_locations) + list(candidates)
+    if distance_fn is None:
+        distance_fn = choose_distance_fn(walking_network)
 
     for year, adoption in sorted(ev_adoption_inputs.items()):
         cfg = build_year_run(adoption, seed=seed)
@@ -453,6 +713,7 @@ def run_cumulative_yearly_optimization(
             current_charger_locations,
             walking_network,
             cfg,
+            distance_fn=distance_fn,
         )
         results.append(result)
         current_charger_locations = select_fixed_locations(
@@ -473,6 +734,7 @@ def run_cumulative_yearly_repetitions(
 ) -> list[dict[str, Any]]:
     """Run cumulative yearly optimization for several random seeds."""
     results: list[dict[str, Any]] = []
+    distance_fn = choose_distance_fn(walking_network)
     for seed in seeds:
         results.extend(
             run_cumulative_yearly_optimization(
@@ -482,6 +744,7 @@ def run_cumulative_yearly_repetitions(
                 existing_charger_locations,
                 walking_network,
                 seed=seed,
+                distance_fn=distance_fn,
             )
         )
     return results
@@ -502,7 +765,7 @@ def _worker_init() -> None:
     _WORKER_DATA["weights"] = load_blended_heatmap_weights(
         candidates, HEATMAP_DENSITY_PATH, EV_DEMAND_HEATMAP_PATH
     )
-    _WORKER_DATA["network"] = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
+    _WORKER_DATA["network"] = load_walking_network_for_mode()
     _WORKER_DATA["ev_adoption"] = load_ev_adoption_inputs(EV_ADOPTION_FORECAST_PATH)
 
 
@@ -518,6 +781,44 @@ def _worker_run_seed(seed: int) -> list[dict[str, Any]]:
     )
 
 
+def load_location_output_inputs():
+    """Load location data needed for the location output files."""
+    candidates = load_candidate_locations(CANDIDATE_LOCATIONS_PATH)
+    existing_charger_locations = load_existing_charger_locations(
+        EXISTING_CHARGERS_PATH
+    )
+    return candidates, existing_charger_locations
+
+
+def write_optimization_outputs(
+    results: list[dict[str, Any]],
+    candidates,
+    existing_charger_locations,
+) -> None:
+    """Write raw, averaged, and location output files."""
+    out_path = OPTIMIZATION_OUTPUT_DIR / "optimization_results.csv"
+    write_csv(out_path, results)
+    print(f"Wrote {len(results)} optimization runs to: {out_path}")
+
+    averaged_results = average_yearly_results(results)
+    avg_out_path = OPTIMIZATION_OUTPUT_DIR / "optimization_results_avg.csv"
+    write_csv(avg_out_path, averaged_results)
+    print(
+        f"Wrote {len(averaged_results)} averaged optimization years to: "
+        f"{avg_out_path}"
+    )
+
+    all_charger_locations = list(existing_charger_locations) + list(candidates)
+    location_csv_path, location_xlsx_path = write_charging_point_location_outputs(
+        OPTIMIZATION_OUTPUT_DIR,
+        averaged_results,
+        all_charger_locations,
+        existing_charger_locations,
+    )
+    print(f"Wrote charging point locations to: {location_csv_path}")
+    print(f"Wrote yearly charging point location workbook to: {location_xlsx_path}")
+
+
 def main() -> None:
     """Run the full yearly charger optimization workflow."""
     OPTIMIZATION_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -530,29 +831,21 @@ def main() -> None:
     n_workers = min(len(seeds), os.cpu_count() or 1)
     print(f"Running {len(seeds)} seeds across {n_workers} parallel workers...")
 
+    results: list[dict[str, Any]] = []
     with concurrent.futures.ProcessPoolExecutor(
         max_workers=n_workers,
         initializer=_worker_init,
     ) as executor:
         futures = {executor.submit(_worker_run_seed, seed): seed for seed in seeds}
-        results: list[dict[str, Any]] = []
         for future in concurrent.futures.as_completed(futures):
             seed = futures[future]
             seed_results = future.result()
             results.extend(seed_results)
             print(f"  Seed {seed} done ({len(seed_results)} years)")
 
-    out_path = OPTIMIZATION_OUTPUT_DIR / "optimization_results.csv"
-    write_csv(out_path, results)
-    print(f"Wrote {len(results)} optimization runs to: {out_path}")
+    candidates, existing_charger_locations = load_location_output_inputs()
+    write_optimization_outputs(results, candidates, existing_charger_locations)
 
-    averaged_results = average_yearly_results(results)
-    avg_out_path = OPTIMIZATION_OUTPUT_DIR / "optimization_results_avg.csv"
-    write_csv(avg_out_path, averaged_results)
-    print(
-        f"Wrote {len(averaged_results)} averaged optimization years to: "
-        f"{avg_out_path}"
-    )
 
 
 if __name__ == "__main__":

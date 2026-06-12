@@ -1,2 +1,2 @@
-scenario,description,charger_strategy,num_cars,num_chargers,max_wait_time,walking_threshold_m,completed_charging,gave_up,completed_pct,gave_up_pct,avg_waiting_time,avg_walking_dist_m,avg_charger_utilization,charger_fids
-current_situation,Current charging points in Strijp-S.,existing,159,5,5,300.0,102,53,64.15094339622641,33.33333333333333,7.13334377499777,339.0598598884618,0.7024305555555556,308440;308702;307904;307905;308108
+scenario,description,charger_strategy,num_cars,num_chargers,max_wait_time,walking_threshold_m,completed_charging,gave_up,completed_pct,gave_up_pct,avg_waiting_time,avg_walking_dist_m,avg_charger_utilization,max_charger_utilization,charger_fids
+current_situation,Current charging points in Strijp-S.,existing,159,5,5,300.0,103,52,64.77987421383648,32.70440251572327,8.636778218096874,378.90310834443255,0.7145138888888889,0.7579861111111111,308440;308702;307904;307905;308108

@@ -338,8 +338,25 @@ class Source:
         self.fixed_charger_locations = charger_locations
         self.destination_weights = destination_weights
         self.walking_network = walking_network
+        self.walking_distance_cache: dict[tuple[int, int], float] = {}
         self.chosen_charger_locations: list[CandidateLocation] = []
         self.action = env.process(self.generate())
+
+    def walking_distance_m(
+        self, start_location: CandidateLocation, end_location: CandidateLocation
+    ) -> float:
+        """Return cached real-network walking distance between two locations."""
+        cache_key = tuple(sorted((start_location.fid, end_location.fid)))
+        if cache_key not in self.walking_distance_cache:
+            start_lat, start_lon = start_location.lat_lon()
+            end_lat, end_lon = end_location.lat_lon()
+            self.walking_distance_cache[cache_key] = self.walking_network.distance_m(
+                start_lat,
+                start_lon,
+                end_lat,
+                end_lon,
+            )
+        return self.walking_distance_cache[cache_key]
 
     def log(self, kind: str, car_name: str, msg: str, **payload):
         """Store a structured event; optionally print it."""
@@ -602,14 +619,7 @@ class Car:
             self.src.config.get("distance_mode", "euclidean") == "network"
             and self.src.walking_network
         ):
-            destination_lat, destination_lon = self.destination.lat_lon()
-            charger_lat, charger_lon = charger.location.lat_lon()
-            return self.src.walking_network.distance_m(
-                destination_lat,
-                destination_lon,
-                charger_lat,
-                charger_lon,
-            )
+            return self.src.walking_distance_m(self.destination, charger.location)
         dx = charger.location.x - self.destination.x
         dy = charger.location.y - self.destination.y
         return (dx * dx + dy * dy) ** 0.5
@@ -630,13 +640,9 @@ class Car:
             self.src.config.get("distance_mode", "euclidean") == "network"
             and self.src.walking_network
         ):
-            charger1_lat, charger1_lon = charger1.location.lat_lon()
-            charger2_lat, charger2_lon = charger2.location.lat_lon()
-            dist_m = self.src.walking_network.distance_m(
-                charger1_lat,
-                charger1_lon,
-                charger2_lat,
-                charger2_lon,
+            dist_m = self.src.walking_distance_m(
+                charger1.location,
+                charger2.location,
             )
             return dist_m / self.src.config.get(
                 "walking_speed_m_per_min", DEFAULT_WALKING_SPEED_M_PER_MIN

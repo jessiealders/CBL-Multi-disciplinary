@@ -138,18 +138,31 @@ def selected_distance_mode() -> str:
     return "euclidean"
 
 
+def load_walking_network_for_mode(distance_mode: str) -> WalkingNetwork | None:
+    """Load the walking network only when scenario runs use network distance."""
+    if distance_mode != "network":
+        return None
+
+    walking_network = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
+    print(
+        f"Loaded walking network: {walking_network.trace_count} traces, "
+        f"{len(walking_network.network_nodes)} connected nodes"
+    )
+    return walking_network
+
+
 def main() -> None:
     candidates = load_candidate_locations(CANDIDATE_LOCATIONS_PATH)
     existing_charger_locations = load_existing_charger_locations(EXISTING_CHARGERS_PATH)
     destination_weights = load_blended_heatmap_weights(
         candidates, HEATMAP_DENSITY_PATH, EV_DEMAND_HEATMAP_PATH
     )
-    walking_network = WalkingNetwork.from_geojson(WALKING_NETWORK_PATH)
     OUTPUT_DIR.mkdir(exist_ok=True)
 
     seeds = list(range(10))  # bump to 20/50 for better statistics
     distance_mode = selected_distance_mode()
     print(f"Using distance mode: {distance_mode}")
+    walking_network = load_walking_network_for_mode(distance_mode)
 
     runs: list[RunConfig] = []
 
