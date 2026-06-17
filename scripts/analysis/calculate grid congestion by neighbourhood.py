@@ -68,9 +68,9 @@ from collections import Counter, defaultdict
 # unknown:
 #     no postcode or grid match
 
-ROOT = Path(__file__).resolve().parents[1]
-TASK_DIR = Path(__file__).resolve().parent
-OTHER_DATA_DIR = ROOT / "other data"
+ROOT = Path(__file__).resolve().parents[2]
+TASK_DIR = Path(__file__).resolve().parents[2] / "processed data" / "grid"
+OTHER_DATA_DIR = ROOT / "processed data"
 SPATIAL_DATA_DIR = OTHER_DATA_DIR / "spatial"
 DATASET_DIR = ROOT / "Data_Set"
 

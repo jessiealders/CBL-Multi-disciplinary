@@ -11,7 +11,7 @@ from scipy.optimize import curve_fit
 def find_project_root(start: Path) -> Path:
     """Find the project folder from this script location."""
     for folder in [start, *start.parents]:
-        if (folder / "Jessie python files").exists():
+        if (folder / "Python files").exists():
             return folder
     raise FileNotFoundError("Could not find the project root folder.")
 

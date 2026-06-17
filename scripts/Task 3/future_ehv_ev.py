@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import the data on percentages of EVs
-data = pd.read_csv('other data\percentage_EVs_EHV.csv',sep=';',index_col=False)[['Periode', 'Waarde']].iloc[:5]
+data = pd.read_csv('processed data/percentage_EVs_EHV.csv',sep=';',index_col=False)[['Periode', 'Waarde']].iloc[:5]
 # Convert the years to datetime format
 data['Date'] = data['Periode'].apply(lambda x: pd.to_datetime(str(x) + '-1-1'))
 # Convert the datetimes to days for regression
