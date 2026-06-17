@@ -17,7 +17,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_DIR = Path(__file__).resolve().parent
-SIMULATION_DIR = ROOT / "Jessie python files"
+SIMULATION_DIR = ROOT / "Python files"
 for module_path in (ROOT, SCRIPT_DIR, SIMULATION_DIR):
     if str(module_path) not in sys.path:
         sys.path.insert(0, str(module_path))
@@ -93,7 +93,7 @@ select_fixed_locations = simulation.select_fixed_locations
 EV_ADOPTION_FORECAST_PATH = (
     ROOT / "processed data" / "ev adoption" / "ev_adoption_forecast.csv"
 )
-OPTIMIZATION_OUTPUT_DIR = ROOT / "output" / "optimization"
+OPTIMIZATION_OUTPUT_DIR = ROOT / "processed data" / "output" / "optimization"
 
 
 # ---------------------------------------------------------------------------
