@@ -2,9 +2,9 @@ import csv
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 GRID_DATA_DIR = ROOT / "Data_Set" / "Dataset 5 – Grid Congestion & Constraints"
-OTHER_DATA_DIR = ROOT / "other data"
+OTHER_DATA_DIR = ROOT / "processed data"
 DATASET_DIR = ROOT / "Data_Set"
 
 
