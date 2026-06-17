@@ -6,7 +6,7 @@ from pyproj import Transformer
 from scipy.ndimage import gaussian_filter
 from sklearn.neighbors import KernelDensity
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CSV_PATH = ROOT / "processed data" / "heatmap4.csv"
 OUT_PATH = ROOT / "processed data" / "heatmap4_density.npz"
 

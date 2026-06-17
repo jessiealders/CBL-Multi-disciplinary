@@ -2,7 +2,7 @@ from pathlib import Path
 import pandas as pd
 from poles_analysis import chargers_per_nbh
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 # Load population density data and keep only Eindhoven neighborhoods
 population_data = pd.read_csv(

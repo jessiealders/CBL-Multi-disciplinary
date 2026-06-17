@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 # Reading the data from the csv file and converting to a Pandas dataframe
 # There were some errors after row 347174, but none of these rows contained data about
 # Eindhoven, so these 'bad lines' are skipped
-congestion_data = pd.read_csv(ROOT / "other data"/"grid"/"congestie_pc6.csv", on_bad_lines='skip', sep=';')
+congestion_data = pd.read_csv(ROOT / "processed data"/"grid"/"congestie_pc6.csv", on_bad_lines='skip', sep=';')
 # Using a regular expression (regex) to find all Eindhoven postcodes and save them in a list
 # (used https://postcodebijadres.nl/eindhoven to find the postcodes)
 ehv_postcodes_list = re.findall(r'56(?:0[0-6]|1[1-7]|2[1-9]|3[1-3]|4[1-7]|5[1-8])[A-Z]{2}',

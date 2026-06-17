@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 # Make Windows-style relative paths (with backslashes) work cross-platform.
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def p(rel_windows_path: str) -> Path:

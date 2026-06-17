@@ -8,7 +8,7 @@ import sys
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 # Safety cap: we don't want to go above this share of the maximum capacity.
@@ -81,7 +81,7 @@ def run_mode_manual_zone_capacity(demand_path: Path, capacity_path: Path) -> Non
         raise ValueError(
             "Capacity missing for zones: "
             + ", ".join(missing)
-            + "\nAdd them to other data/zone_grid_capacity.csv"
+            + "\nAdd them to processed data/zone_grid_capacity.csv"
         )
 
     # Safety cap: only allow using up to MAX_UTILIZATION of the (max) capacity.
@@ -119,7 +119,7 @@ def run_mode_manual_zone_capacity(demand_path: Path, capacity_path: Path) -> Non
         ].to_string(index=False)
     )
 
-    output_csv = p(r"other data\zone_remaining_capacity_estimates.csv")
+    output_csv = ROOT / "processed data" / "zone_remaining_capacity_estimates.csv"
     out.to_csv(output_csv, index=False)
     print(f"\nWrote: {output_csv}")
 
@@ -204,7 +204,8 @@ def run_mode_estimated_from_congestion(
         ].to_string(index=False)
     )
 
-    output_csv = p(r"other data\congestion_based_remaining_capacity.csv")
+
+    output_csv = ROOT / "processed data" / "congestion_based_remaining_capacity.csv"
     voedingsgebied.to_csv(output_csv, index=False)
     print(f"\nWrote: {output_csv}")
 
@@ -261,7 +262,7 @@ def run_mode_assume_all_zones_class0(demand_path: Path) -> None:
         ].to_string(index=False)
     )
 
-    output_csv = p(r"other data\grid\zone_remaining_capacity_estimates_assume_class0.csv")
+    output_csv = ROOT / "processed data" / "grid" / "zone_remaining_capacity_estimates_assume_class0.csv"
     out.to_csv(output_csv, index=False)
     print(f"\nWrote: {output_csv}")
 
@@ -271,7 +272,7 @@ def main() -> None:
     parser.add_argument(
         "--mode",
     choices=["manual", "congestion", "assume-class0"],
-        default="manual",
+        default="assume-class0",
         help="manual=use other data/zone_grid_capacity.csv; congestion=estimate from congestie_pc6.csv",
     )
     parser.add_argument(
@@ -299,7 +300,8 @@ def main() -> None:
         raise FileNotFoundError(f"Demand file not found: {demand_path}")
 
     if args.mode == "manual":
-        capacity_path = p(r"other data\zone_grid_capacity.csv")
+        # NOTE: file does not exist on git anymore.
+        capacity_path = ROOT / "processed data" / "zone_grid_capacity.csv"
         run_mode_manual_zone_capacity(demand_path=demand_path, capacity_path=capacity_path)
         return
 
