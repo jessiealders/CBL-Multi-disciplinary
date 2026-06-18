@@ -11,8 +11,8 @@ from matplotlib.collections import LineCollection
 from scipy.ndimage import gaussian_filter
 from shapely.geometry import LineString
 
-ROOT = Path(__file__).resolve().parents[1]
-GPX_FILE = ROOT / "other data" / "bbox_traces.gpx"
+ROOT = Path(__file__).resolve().parents[2]
+GPX_FILE = ROOT / "processed data" / "bbox_traces.gpx"
 
 NS = {"gpx": "http://www.topografix.com/GPX/1/0"}
 
@@ -73,8 +73,8 @@ def plot_heatmap(gdf, ax) -> None:
 
 
 density_overlay = True
-save_to = ROOT / "other data" / "gpx_density.png"
-density_save_to = ROOT / "other data" / "gpx_heatmap_density.npz"
+save_to = ROOT / "processed data" / "gpx_density.png"
+density_save_to = ROOT / "processed data" / "gpx_heatmap_density.npz"
 
 gdf = load_data()
 xmin, ymin, xmax, ymax = gdf.total_bounds

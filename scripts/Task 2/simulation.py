@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 from pyproj import Transformer
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -30,7 +30,7 @@ EXISTING_CHARGERS_PATH = (
 HEATMAP_DENSITY_PATH = ROOT / "processed data" / "gpx_heatmap_density.npz"
 EV_DEMAND_HEATMAP_PATH = ROOT / "processed data" / "heatmap4_density.npz"
 WALKING_NETWORK_PATH = ROOT / "processed data" / "spatial" / "walking_traces.geojson"
-OUTPUT_DIR = ROOT / "processed data" / "output" / "baseline"
+OUTPUT_DIR = ROOT / "output" / "baseline"
 
 RD_TO_WGS84 = Transformer.from_crs("EPSG:28992", "EPSG:4326", always_xy=True)
 RD_TO_WEB_MERCATOR = Transformer.from_crs("EPSG:28992", "EPSG:3857", always_xy=True)
@@ -923,7 +923,7 @@ def main() -> None:
         f"{len(walking_network.network_nodes)} connected nodes"
     )
 
-    baseline_output_dir = ROOT / "processed data" / "output" / "baseline"
+    baseline_output_dir = ROOT / "output" / "baseline"
     baseline_output_dir.mkdir(parents=True, exist_ok=True)
 
     results = []

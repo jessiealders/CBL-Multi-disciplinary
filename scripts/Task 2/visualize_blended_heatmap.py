@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pyproj import Transformer
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 from simulation import (
     CANDIDATE_LOCATIONS_PATH,
@@ -17,7 +17,7 @@ from simulation import (
     load_candidate_locations,
 )
 
-SAVE_TO = ROOT / "other data" / "blended_heatmap.png"
+SAVE_TO = ROOT / "processed data" / "blended_heatmap.png"
 
 RD_TO_3857 = Transformer.from_crs("EPSG:28992", "EPSG:3857", always_xy=True)
 
