@@ -17,7 +17,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_DIR = Path(__file__).resolve().parent
-SIMULATION_DIR = ROOT / "Python files"
+SIMULATION_DIR = ROOT / "scripts" / "Task 2"
 for module_path in (ROOT, SCRIPT_DIR, SIMULATION_DIR):
     if str(module_path) not in sys.path:
         sys.path.insert(0, str(module_path))

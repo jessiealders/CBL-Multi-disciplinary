@@ -1,12 +1,15 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 from matplotlib.patches import Patch
 
 # Import the results data
-random_results_fit = pd.read_csv('output\scenario_kpi_fit_summary.csv')
-optimization_results = pd.read_csv('output\optimization\optimization_results_avg.csv')
-random_results = pd.read_csv('output\scenarios\scenario_results_avg.csv')
+ROOT = Path(__file__).resolve().parents[2]
+
+random_results_fit = pd.read_csv(ROOT / 'output'/'scenario_kpi_fit_summary.csv')
+optimization_results = pd.read_csv(ROOT / 'output'/'optimization'/'optimization_results_avg.csv')
+random_results = pd.read_csv(ROOT / 'output'/'scenarios'/'scenario_results_avg.csv')
 
 # Initialize the number of arrivals per year
 num_arrivals_base = 159
