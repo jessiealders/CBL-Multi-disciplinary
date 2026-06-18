@@ -32,14 +32,14 @@ from collections import Counter
 # The map is a postcode-based neighbourhood approximation, not an exact PC6 or
 # transformer map.
 
-ROOT = Path(__file__).resolve().parents[1]
-TASK_DIR = Path(__file__).resolve().parent
-OTHER_DATA_DIR = ROOT / "other data"
+ROOT = Path(__file__).resolve().parents[2]
+TASK_DIR = Path(__file__).resolve().parents[2]
+OTHER_DATA_DIR = ROOT / "processed data"
 SPATIAL_DATA_DIR = OTHER_DATA_DIR / "spatial"
 
 BUURTEN_FILE = SPATIAL_DATA_DIR / "eindhoven_buurten_cbs_2024.geojson"
-INPUT_CSV = TASK_DIR / "eindhoven_grid_congestion_by_neighbourhood.csv"
-OUTPUT_MAP = TASK_DIR / "eindhoven_grid_congestion_map.html"
+INPUT_CSV = TASK_DIR / "processed data" / "grid" / "eindhoven_grid_congestion_by_neighbourhood.csv"
+OUTPUT_MAP = OTHER_DATA_DIR / "eindhoven_grid_congestion_map.html"
 
 
 def read_csv_rows(path):
